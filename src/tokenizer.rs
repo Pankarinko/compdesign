@@ -1,11 +1,11 @@
-use std::{str::from_utf8, u8};
+use std::{range, str::from_utf8, u8};
 
 enum Token<'a> {
     Identifier(&'a [u8]),
     NumericValue(i32),
     ArithmeticSymbol(ArithmeticSymbol),
     ArithmeticSymbolEqual(ArithmeticSymbolEqual),
-    EndOfLine,
+    StatementEnd,
     BracketOpen,
     BracketClose,
     Keyword(Keyword),
@@ -123,68 +123,106 @@ fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Result<i
         if i == end {
             return Ok(0);
         }
+        let equals = b'=';
+        match input_string[i] {
+            b'+' => {
+                if input_string[i + 1] == equals {
+                    tokens.push(Token::ArithmeticSymbolEqual(
+                        ArithmeticSymbolEqual::PlusEqual,
+                    ));
+                } else {
+                    tokens.push(Token::ArithmeticSymbol(ArithmeticSymbol::Plus));
+                }
+                break;
+            }
+            b'-' => {
+                if input_string[i + 1] == equals {
+                    tokens.push(Token::ArithmeticSymbolEqual(
+                        ArithmeticSymbolEqual::MinusEqual,
+                    ));
+                } else {
+                    tokens.push(Token::ArithmeticSymbol(ArithmeticSymbol::Minus));
+                }
+                break;
+            }
+            b'*' => {
+                if input_string[i + 1] == equals {
+                    tokens.push(Token::ArithmeticSymbolEqual(
+                        ArithmeticSymbolEqual::MultEqual,
+                    ));
+                } else {
+                    tokens.push(Token::ArithmeticSymbol(ArithmeticSymbol::Mult));
+                }
+                break;
+            }
+            b'/' => {
+                if input_string[i + 1] == equals {
+                    tokens.push(Token::ArithmeticSymbolEqual(
+                        ArithmeticSymbolEqual::DivEqual,
+                    ));
+                } else {
+                    tokens.push(Token::ArithmeticSymbol(ArithmeticSymbol::Div));
+                }
+                break;
+            }
+            b'%' => {
+                if input_string[i + 1] == equals {
+                    tokens.push(Token::ArithmeticSymbolEqual(
+                        ArithmeticSymbolEqual::ModEqual,
+                    ));
+                } else {
+                    tokens.push(Token::ArithmeticSymbol(ArithmeticSymbol::Mod));
+                }
+                break;
+            }
+            b'(' => {
+                tokens.push(Token::BracketOpen);
+            }
+            b')' => {
+                tokens.push(Token::BracketClose);
+            }
+            b';' => {tokens.push(Token::StatementEnd);}
+            b'\n' | b'\t' | b' ' => {
+                i += 1;
+                break;
+            }
+            b'/' => {
+                if input_string[i + 1] == b'/' {
+                    while i != end && input_string[i] != b'\n' {
+                        i += 1;
+                    }
+                    break;
+                } else if input_string[i + 1] == b'*' {
+                    i += 2;
+                    let mut open = 1;
+                    while open > 0 {
+                        if i + 1 > end {
+                            return Err(1);
+                        }
+                        if input_string[i] == b'/' && input_string[i + 1] == b'*' {
+                            i += 1;
+                            open += 1;
+                        } else if input_string[i] == b'*' && input_string[i + 1] == b'/' {
+                            i += 1;
+                            open -= 1;
+                        }
+                        i += 1;
+                    }
+                    break;
+                } else {
+                    return Err(1);
+                }
+            }
+            _ => {}
+        }
         let mut curr_end = i + 1;
-        while curr_end < end && input_string[curr_end] != b' ' {
-            curr_end += 1;
+        if TODO: check if start in range
+        while input_string[i + 1] {
+            
         }
         let word = &input_string[i..curr_end];
         i += word.len();
-        if word.len() == 0 {
-            break;
-        }
         match word {
-            b"+" => {
-                tokens.push(Token::ArithmeticSymbol(ArithmeticSymbol::Plus));
-                break;
-            }
-            b"-" => {
-                tokens.push(Token::ArithmeticSymbol(ArithmeticSymbol::Minus));
-                break;
-            }
-            b"*" => {
-                tokens.push(Token::ArithmeticSymbol(ArithmeticSymbol::Mult));
-                break;
-            }
-            b"/" => {
-                tokens.push(Token::ArithmeticSymbol(ArithmeticSymbol::Div));
-                break;
-            }
-            b"%" => {
-                tokens.push(Token::ArithmeticSymbol(ArithmeticSymbol::Mod));
-            }
-            b"+=" => {
-                tokens.push(Token::ArithmeticSymbolEqual(
-                    ArithmeticSymbolEqual::PlusEqual,
-                ));
-                break;
-            }
-            b"-=" => {
-                tokens.push(Token::ArithmeticSymbolEqual(
-                    ArithmeticSymbolEqual::MinusEqual,
-                ));
-                break;
-            }
-            b"*=" => {
-                tokens.push(Token::ArithmeticSymbolEqual(
-                    ArithmeticSymbolEqual::MultEqual,
-                ));
-                break;
-            }
-            b"/=" => {
-                tokens.push(Token::ArithmeticSymbolEqual(
-                    ArithmeticSymbolEqual::DivEqual,
-                ));
-                break;
-            }
-            b"%=" => {
-                tokens.push(Token::ArithmeticSymbolEqual(
-                    ArithmeticSymbolEqual::ModEqual,
-                ));
-            }
-            b"=" => {
-                tokens.push(Token::ArithmeticSymbolEqual(ArithmeticSymbolEqual::Equal));
-                break;
-            }
             b"struct" => {
                 tokens.push(Token::Keyword(Keyword::Struct));
                 break;
