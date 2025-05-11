@@ -301,20 +301,15 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
                         break;
                     }
                 } else {
-                    let mut temp_i = i;
                     let mut decval: i32 = 0;
                     while let Some(digit) = convert_digit(&input_string[i]) {
-                        temp_i += 1;
                         if digit > 9 {
                             break;
                         }
+                        i += 1;
                         decval = decval * 10 + digit;
                     }
-                    if i == temp_i {
-                        return Err(1);
-                    }
                     tokens.push(Token::NumericValue(decval));
-                    i = temp_i;
                     break;
                 }
             }
