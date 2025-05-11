@@ -1,5 +1,5 @@
-pub mod tokenizer;
+mod tokenizer;
 
 fn main() {
-    tokenize();
+    //tokenizer::tokenize();
 }

@@ -1,6 +1,6 @@
-use std::{range, str::from_utf8, u8};
+use std::u8;
 
-enum Token<'a> {
+pub enum Token<'a> {
     Identifier(&'a [u8]),
     NumericValue(i32),
     ArithmeticSymbol(ArithmeticSymbol),
@@ -11,7 +11,7 @@ enum Token<'a> {
     Keyword(Keyword),
 }
 
-enum ArithmeticSymbol {
+pub enum ArithmeticSymbol {
     Plus,
     Minus,
     Mult,
@@ -19,7 +19,7 @@ enum ArithmeticSymbol {
     Mod,
 }
 
-enum ArithmeticSymbolEqual {
+pub enum ArithmeticSymbolEqual {
     PlusEqual,
     MinusEqual,
     MultEqual,
@@ -28,7 +28,7 @@ enum ArithmeticSymbolEqual {
     Equal,
 }
 
-enum Keyword {
+pub enum Keyword {
     Struct,
     If,
     Else,
@@ -75,48 +75,7 @@ fn convert_digit(digit: &u8) -> Option<i32> {
     })
 }
 
-/* Converts a number string represented as u8 to i32 */
-fn convert_u8_i32(word: &[u8]) -> Option<i32> {
-    if word.len() > 2 && word[0] == 0 && (word[1] == b'x' || word[1] == b'X') {
-        let mut i = 2;
-        let mut hexval = 0;
-        while i < word.len() {
-            if let Some(digit) = convert_digit(&word[i]) {
-                hexval = (hexval << 4) + digit;
-                i += 1;
-            } else {
-                return None;
-            }
-        }
-        return Some(hexval);
-    } else {
-        if word[0] == b'0' {
-            if word.len() == 1 {
-                return Some(0);
-            } else {
-                return None;
-            }
-        }
-        let mut i = 1;
-        let mut decval = 0;
-        while i < word.len() {
-            if let Some(digit) = convert_digit(&word[i]) {
-                if digit <= 9 {
-                    decval = decval * 10 + digit;
-                    i += 1;
-                } else {
-                    return None;
-                }
-            } else {
-                return None;
-            }
-        }
-        return Some(decval);
-    }
-    None
-}
-
-fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Result<i32, i32> {
+pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Result<i32, i32> {
     let end = input_string.len();
     let mut i = 0;
     loop {
@@ -181,7 +140,9 @@ fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Result<i
             b')' => {
                 tokens.push(Token::BracketClose);
             }
-            b';' => {tokens.push(Token::StatementEnd);}
+            b';' => {
+                tokens.push(Token::StatementEnd);
+            }
             b'\n' | b'\t' | b' ' => {
                 i += 1;
                 break;
@@ -215,106 +176,150 @@ fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Result<i
             }
             _ => {}
         }
-        let mut curr_end = i + 1;
-        if TODO: check if start in range
-        while input_string[i + 1] {
-            
+        match input_string[i] {
+            b'a'..=b'z' | b'A'..=b'Z' | b'_' => {
+                let mut curr_end = i + i;
+                while curr_end < end {
+                    match input_string[curr_end] {
+                        b'a'..=b'z' | b'A'..=b'Z' | b'_' | b'0'..=b'9' => {
+                            curr_end += 1;
+                        }
+                        _ => {
+                            break;
+                        }
+                    }
+                }
+                let word = &input_string[i..curr_end];
+                i += word.len();
+                match word {
+                    b"struct" => {
+                        tokens.push(Token::Keyword(Keyword::Struct));
+                        break;
+                    }
+                    b"if" => {
+                        tokens.push(Token::Keyword(Keyword::If));
+                        break;
+                    }
+                    b"else" => {
+                        tokens.push(Token::Keyword(Keyword::Else));
+                        break;
+                    }
+                    b"while" => {
+                        tokens.push(Token::Keyword(Keyword::While));
+                        break;
+                    }
+                    b"for" => {
+                        tokens.push(Token::Keyword(Keyword::For));
+                        break;
+                    }
+                    b"continue" => {
+                        tokens.push(Token::Keyword(Keyword::Continue));
+                        break;
+                    }
+                    b"break" => {
+                        tokens.push(Token::Keyword(Keyword::Break));
+                        break;
+                    }
+                    b"return" => {
+                        tokens.push(Token::Keyword(Keyword::Return));
+                        break;
+                    }
+                    b"assert" => {
+                        tokens.push(Token::Keyword(Keyword::Assert));
+                        break;
+                    }
+                    b"true" => {
+                        tokens.push(Token::Keyword(Keyword::True));
+                        break;
+                    }
+                    b"false" => {
+                        tokens.push(Token::Keyword(Keyword::False));
+                        break;
+                    }
+                    b"NULL" => {
+                        tokens.push(Token::Keyword(Keyword::Null));
+                        break;
+                    }
+                    b"print" => {
+                        tokens.push(Token::Keyword(Keyword::Print));
+                        break;
+                    }
+                    b"read" => {
+                        tokens.push(Token::Keyword(Keyword::Read));
+                        break;
+                    }
+                    b"alloc" => {
+                        tokens.push(Token::Keyword(Keyword::Alloc));
+                        break;
+                    }
+                    b"alloc_array" => {
+                        tokens.push(Token::Keyword(Keyword::AllocArray));
+                        break;
+                    }
+                    b"int" => {
+                        tokens.push(Token::Keyword(Keyword::Int));
+                        break;
+                    }
+                    b"bool" => {
+                        tokens.push(Token::Keyword(Keyword::Bool));
+                        break;
+                    }
+                    b"void" => {
+                        tokens.push(Token::Keyword(Keyword::Void));
+                        break;
+                    }
+                    b"char" => {
+                        tokens.push(Token::Keyword(Keyword::Char));
+                        break;
+                    }
+                    b"string" => {
+                        tokens.push(Token::Keyword(Keyword::String));
+                        break;
+                    }
+                    _ => {}
+                }
+            }
+            b'0'..=b'9' => {
+                if input_string[i] == b'0' {
+                    i += 1;
+                    if input_string[i] == b'x' || input_string[i] == b'X' {
+                        i += 1;
+                        let mut temp_i = i;
+                        let mut hexval: i32 = 0;
+                        while let Some(digit) = convert_digit(&input_string[i]) {
+                            temp_i += 1;
+                            hexval = (hexval << 4) + digit;
+                        }
+                        if i == temp_i {
+                            return Err(1);
+                        }
+                        tokens.push(Token::NumericValue(hexval));
+                        i = temp_i;
+                        break;
+                    } else {
+                        tokens.push(Token::NumericValue(0));
+                        break;
+                    }
+                } else {
+                    let mut temp_i = i;
+                    let mut decval: i32 = 0;
+                    while let Some(digit) = convert_digit(&input_string[i]) {
+                        temp_i += 1;
+                        if digit > 9 {
+                            break;
+                        }
+                        decval = decval * 10 + digit;
+                    }
+                    if i == temp_i {
+                        return Err(1);
+                    }
+                    tokens.push(Token::NumericValue(decval));
+                    i = temp_i;
+                    break;
+                }
+            }
+            _ => return Err(0),
         }
-        let word = &input_string[i..curr_end];
-        i += word.len();
-        match word {
-            b"struct" => {
-                tokens.push(Token::Keyword(Keyword::Struct));
-                break;
-            }
-            b"if" => {
-                tokens.push(Token::Keyword(Keyword::If));
-                break;
-            }
-            b"else" => {
-                tokens.push(Token::Keyword(Keyword::Else));
-                break;
-            }
-            b"while" => {
-                tokens.push(Token::Keyword(Keyword::While));
-                break;
-            }
-            b"for" => {
-                tokens.push(Token::Keyword(Keyword::For));
-                break;
-            }
-            b"continue" => {
-                tokens.push(Token::Keyword(Keyword::Continue));
-                break;
-            }
-            b"break" => {
-                tokens.push(Token::Keyword(Keyword::Break));
-                break;
-            }
-            b"return" => {
-                tokens.push(Token::Keyword(Keyword::Return));
-                break;
-            }
-            b"assert" => {
-                tokens.push(Token::Keyword(Keyword::Assert));
-                break;
-            }
-            b"true" => {
-                tokens.push(Token::Keyword(Keyword::True));
-                break;
-            }
-            b"false" => {
-                tokens.push(Token::Keyword(Keyword::False));
-                break;
-            }
-            b"NULL" => {
-                tokens.push(Token::Keyword(Keyword::Null));
-                break;
-            }
-            b"print" => {
-                tokens.push(Token::Keyword(Keyword::Print));
-                break;
-            }
-            b"read" => {
-                tokens.push(Token::Keyword(Keyword::Read));
-                break;
-            }
-            b"alloc" => {
-                tokens.push(Token::Keyword(Keyword::Alloc));
-                break;
-            }
-            b"alloc_array" => {
-                tokens.push(Token::Keyword(Keyword::AllocArray));
-                break;
-            }
-            b"int" => {
-                tokens.push(Token::Keyword(Keyword::Int));
-                break;
-            }
-            b"bool" => {
-                tokens.push(Token::Keyword(Keyword::Bool));
-                break;
-            }
-            b"void" => {
-                tokens.push(Token::Keyword(Keyword::Void));
-                break;
-            }
-            b"char" => {
-                tokens.push(Token::Keyword(Keyword::Char));
-                break;
-            }
-            b"string" => {
-                tokens.push(Token::Keyword(Keyword::String));
-                break;
-            }
-            _ => {}
-        }
-        /* Check if the word is a valid number */
-        if let Some(number) = convert_u8_i32(word) {
-            tokens.push(Token::NumericValue(number));
-            break;
-        }
-
         i += 1;
     }
     Ok(0)
