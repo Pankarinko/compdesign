@@ -276,7 +276,10 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
                         tokens.push(Token::Keyword(Keyword::String));
                         break;
                     }
-                    _ => {}
+                    _ => {
+                        tokens.push(Token::Identifier(word));
+                        break;
+                    }
                 }
             }
             b'0'..=b'9' => {
