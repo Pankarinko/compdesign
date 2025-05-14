@@ -1,0 +1,79 @@
+use std::str::FromStr;
+use crate::ast::{Exp, Binop};
+use crate::Token;
+use crate::tokenizer::Keyword;
+use crate::tokenizer::ArithmeticSymbolEqual;
+use crate::tokenizer::ArithmeticSymbol;
+
+
+grammar<'a>(input: &'a [u8]);
+
+extern {
+    enum Token<'a> {
+        "ident" => Token::Identifier(<&'a [u8]>),
+        "num" => Token::NumericValue(<i32>),
+        "+" => Token::ArithmeticSymbol(ArithmeticSymbol::Plus),
+        "*" => Token::ArithmeticSymbol(ArithmeticSymbol::Mult),
+        "/" => Token::ArithmeticSymbol(ArithmeticSymbol::Div),
+        "-" => Token::ArithmeticSymbol(ArithmeticSymbol::Minus),
+        "%" => Token::ArithmeticSymbol(ArithmeticSymbol::Mod),
+        "+=" => Token::ArithmeticSymbolEqual(ArithmeticSymbolEqual::PlusEqual),
+        "*=" => Token::ArithmeticSymbolEqual(ArithmeticSymbolEqual::MultEqual),
+        "/=" => Token::ArithmeticSymbolEqual(ArithmeticSymbolEqual::DivEqual),
+        "-=" => Token::ArithmeticSymbolEqual(ArithmeticSymbolEqual::MinusEqual),
+        "%=" => Token::ArithmeticSymbolEqual(ArithmeticSymbolEqual::ModEqual),
+        "=" => Token::ArithmeticSymbolEqual(ArithmeticSymbolEqual::Equal),
+        ";" => Token::StatementEnd,
+        "(" => Token::ParenthOpen,
+        ")" => Token::ParenthClose,
+        "{" => Token::BraceOpen,
+        "}" => Token::BraceClose,
+        "main" => Token::Main,
+        "struct" => Token::Keyword(Keyword::Struct),
+        "if" => Token::Keyword(Keyword::If),
+        "else" => Token::Keyword(Keyword::Else),
+        "while" => Token::Keyword(Keyword::While),
+        "for" => Token::Keyword(Keyword::For),
+        "continue" => Token::Keyword(Keyword::Continue),
+        "break" => Token::Keyword(Keyword::Break),
+        "return" => Token::Keyword(Keyword::Return),
+        "assert" => Token::Keyword(Keyword::Assert),
+        "true" => Token::Keyword(Keyword::True),
+        "false" => Token::Keyword(Keyword::False),
+        "NULL" => Token::Keyword(Keyword::Null),
+        "print" => Token::Keyword(Keyword::Print),
+        "read" => Token::Keyword(Keyword::Read),
+        "alloc" => Token::Keyword(Keyword::Alloc),
+        "alloc_array" => Token::Keyword(Keyword::AllocArray),
+        "int" => Token::Keyword(Keyword::Int),
+        "bool" => Token::Keyword(Keyword::Bool),
+        "void" => Token::Keyword(Keyword::Void),
+        "char" => Token::Keyword(Keyword::Char),
+        "string" => Token::Keyword(Keyword::String),
+    }
+}
+
+
+
+pub Exp: Exp<'a> = {
+    #[precedence(level="0")]
+    "(" <TopExp> ")",
+    <n:"num"> => Exp::Intconst(n),
+    <name:"ident"> => Exp::Ident(name),
+    #[precedence(level="1")]  #[assoc(side="right")]
+    "-" <e:Exp> => Exp::Negative(Box::new(e)),
+    #[precedence(level="2")] #[assoc(side="left")]
+    <e1:Exp> "*" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::Mult, e2))),
+    <e1:Exp> "/" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::Div, e2))),
+    <e1:Exp> "%" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::Mod, e2))),
+    #[precedence(level="3")] #[assoc(side="left")]
+    <e1:Exp> "+" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::Plus, e2))),
+    <e1:Exp> "-" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::Minus, e2))),
+}
+
+pub TopExp: Exp<'a> = {
+    <Exp>,
+}
+
+
+

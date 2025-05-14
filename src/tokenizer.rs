@@ -1,16 +1,27 @@
-use std::u8;
+use std::{fmt, u8};
 
+#[derive(Debug, Clone)]
 pub enum Token<'a> {
     Identifier(&'a [u8]),
     NumericValue(i32),
     ArithmeticSymbol(ArithmeticSymbol),
     ArithmeticSymbolEqual(ArithmeticSymbolEqual),
     StatementEnd,
-    BracketOpen,
-    BracketClose,
+    ParenthOpen,
+    ParenthClose,
+    BraceOpen,
+    BraceClose,
+    Main,
     Keyword(Keyword),
 }
 
+impl<'a> fmt::Display for Token<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum ArithmeticSymbol {
     Plus,
     Minus,
@@ -19,6 +30,7 @@ pub enum ArithmeticSymbol {
     Mod,
 }
 
+#[derive(Debug, Clone)]
 pub enum ArithmeticSymbolEqual {
     PlusEqual,
     MinusEqual,
@@ -28,6 +40,7 @@ pub enum ArithmeticSymbolEqual {
     Equal,
 }
 
+#[derive(Debug, Clone)]
 pub enum Keyword {
     Struct,
     If,
@@ -79,6 +92,7 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
     let end = input_string.len();
     let mut i = 0;
     loop {
+        println!("{i}");
         if i == end {
             return Ok(0);
         }
@@ -91,68 +105,46 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
                     ));
                 } else {
                     tokens.push(Token::ArithmeticSymbol(ArithmeticSymbol::Plus));
+                    i += 1;
                 }
-                break;
+                continue;
             }
             b'-' => {
                 if input_string[i + 1] == equals {
                     tokens.push(Token::ArithmeticSymbolEqual(
                         ArithmeticSymbolEqual::MinusEqual,
                     ));
+                    i += 2;
                 } else {
                     tokens.push(Token::ArithmeticSymbol(ArithmeticSymbol::Minus));
+                    i += 1;
                 }
-                break;
+                continue;
             }
             b'*' => {
                 if input_string[i + 1] == equals {
                     tokens.push(Token::ArithmeticSymbolEqual(
                         ArithmeticSymbolEqual::MultEqual,
                     ));
+                    i += 2;
                 } else {
                     tokens.push(Token::ArithmeticSymbol(ArithmeticSymbol::Mult));
+                    i += 1;
                 }
-                break;
+                continue;
             }
             b'/' => {
                 if input_string[i + 1] == equals {
                     tokens.push(Token::ArithmeticSymbolEqual(
                         ArithmeticSymbolEqual::DivEqual,
                     ));
-                } else {
-                    tokens.push(Token::ArithmeticSymbol(ArithmeticSymbol::Div));
+                    i += 2;
                 }
-                break;
-            }
-            b'%' => {
-                if input_string[i + 1] == equals {
-                    tokens.push(Token::ArithmeticSymbolEqual(
-                        ArithmeticSymbolEqual::ModEqual,
-                    ));
-                } else {
-                    tokens.push(Token::ArithmeticSymbol(ArithmeticSymbol::Mod));
-                }
-                break;
-            }
-            b'(' => {
-                tokens.push(Token::BracketOpen);
-            }
-            b')' => {
-                tokens.push(Token::BracketClose);
-            }
-            b';' => {
-                tokens.push(Token::StatementEnd);
-            }
-            b'\n' | b'\t' | b' ' => {
-                i += 1;
-                break;
-            }
-            b'/' => {
                 if input_string[i + 1] == b'/' {
                     while i != end && input_string[i] != b'\n' {
                         i += 1;
                     }
-                    break;
+                    continue;
                 } else if input_string[i + 1] == b'*' {
                     i += 2;
                     let mut open = 1;
@@ -169,19 +161,69 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
                         }
                         i += 1;
                     }
-                    break;
+                    continue;
                 } else {
-                    return Err(1);
+                    tokens.push(Token::ArithmeticSymbol(ArithmeticSymbol::Div));
+                    i += 1;
                 }
+                continue;
+            }
+            b'%' => {
+                if input_string[i + 1] == equals {
+                    tokens.push(Token::ArithmeticSymbolEqual(
+                        ArithmeticSymbolEqual::ModEqual,
+                    ));
+                    i += 1;
+                } else {
+                    tokens.push(Token::ArithmeticSymbol(ArithmeticSymbol::Mod));
+                    i += 1;
+                }
+                continue;
+            }
+            b'=' => {
+                tokens.push(Token::ArithmeticSymbolEqual(ArithmeticSymbolEqual::Equal));
+                i += 1;
+                continue;
+            }
+            b'(' => {
+                tokens.push(Token::ParenthOpen);
+                i += 1;
+                continue;
+            }
+            b')' => {
+                tokens.push(Token::ParenthClose);
+                i += 1;
+                continue;
+            }
+            b'{' => {
+                tokens.push(Token::BraceOpen);
+                i += 1;
+                continue;
+            }
+            b'}' => {
+                tokens.push(Token::BraceClose);
+                i += 1;
+                continue;
+            }
+            b';' => {
+                tokens.push(Token::StatementEnd);
+                i += 1;
+                continue;
+            }
+            b'\n' | b'\t' | b' ' => {
+                i += 1;
+                continue;
             }
             _ => {}
         }
+        println!("{}", input_string[i] as char);
         match input_string[i] {
             b'a'..=b'z' | b'A'..=b'Z' | b'_' => {
-                let mut curr_end = i + i;
+                let mut curr_end = i + 1;
                 while curr_end < end {
                     match input_string[curr_end] {
                         b'a'..=b'z' | b'A'..=b'Z' | b'_' | b'0'..=b'9' => {
+                            println!("{}", input_string[curr_end] as char);
                             curr_end += 1;
                         }
                         _ => {
@@ -192,93 +234,97 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
                 let word = &input_string[i..curr_end];
                 i += word.len();
                 match word {
+                    b"main" => {
+                        tokens.push(Token::Main);
+                        continue;
+                    }
                     b"struct" => {
                         tokens.push(Token::Keyword(Keyword::Struct));
-                        break;
+                        continue;
                     }
                     b"if" => {
                         tokens.push(Token::Keyword(Keyword::If));
-                        break;
+                        continue;
                     }
                     b"else" => {
                         tokens.push(Token::Keyword(Keyword::Else));
-                        break;
+                        continue;
                     }
                     b"while" => {
                         tokens.push(Token::Keyword(Keyword::While));
-                        break;
+                        continue;
                     }
                     b"for" => {
                         tokens.push(Token::Keyword(Keyword::For));
-                        break;
+                        continue;
                     }
                     b"continue" => {
                         tokens.push(Token::Keyword(Keyword::Continue));
-                        break;
+                        continue;
                     }
                     b"break" => {
                         tokens.push(Token::Keyword(Keyword::Break));
-                        break;
+                        continue;
                     }
                     b"return" => {
                         tokens.push(Token::Keyword(Keyword::Return));
-                        break;
+                        continue;
                     }
                     b"assert" => {
                         tokens.push(Token::Keyword(Keyword::Assert));
-                        break;
+                        continue;
                     }
                     b"true" => {
                         tokens.push(Token::Keyword(Keyword::True));
-                        break;
+                        continue;
                     }
                     b"false" => {
                         tokens.push(Token::Keyword(Keyword::False));
-                        break;
+                        continue;
                     }
                     b"NULL" => {
                         tokens.push(Token::Keyword(Keyword::Null));
-                        break;
+                        continue;
                     }
                     b"print" => {
                         tokens.push(Token::Keyword(Keyword::Print));
-                        break;
+                        continue;
                     }
                     b"read" => {
                         tokens.push(Token::Keyword(Keyword::Read));
-                        break;
+                        continue;
                     }
                     b"alloc" => {
                         tokens.push(Token::Keyword(Keyword::Alloc));
-                        break;
+                        continue;
                     }
                     b"alloc_array" => {
                         tokens.push(Token::Keyword(Keyword::AllocArray));
-                        break;
+                        continue;
                     }
                     b"int" => {
                         tokens.push(Token::Keyword(Keyword::Int));
-                        break;
+                        continue;
                     }
                     b"bool" => {
                         tokens.push(Token::Keyword(Keyword::Bool));
-                        break;
+                        continue;
                     }
                     b"void" => {
                         tokens.push(Token::Keyword(Keyword::Void));
-                        break;
+                        continue;
                     }
                     b"char" => {
                         tokens.push(Token::Keyword(Keyword::Char));
-                        break;
+                        continue;
                     }
                     b"string" => {
                         tokens.push(Token::Keyword(Keyword::String));
-                        break;
+                        continue;
                     }
                     _ => {
                         tokens.push(Token::Identifier(word));
-                        break;
+                        continue;
                     }
                 }
             }
@@ -298,27 +344,25 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
                         }
                         tokens.push(Token::NumericValue(hexval));
                         i = temp_i;
-                        break;
+                        continue;
                     } else {
                         tokens.push(Token::NumericValue(0));
-                        break;
+                        continue;
                     }
                 } else {
                     let mut decval: i32 = 0;
                     while let Some(digit) = convert_digit(&input_string[i]) {
                         if digit > 9 {
-                            break;
+                            continue;
                         }
                         i += 1;
                         decval = decval * 10 + digit;
                     }
                     tokens.push(Token::NumericValue(decval));
-                    break;
+                    continue;
                 }
             }
             _ => return Err(0),
         }
-        i += 1;
     }
-    Ok(0)
 }
