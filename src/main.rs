@@ -12,10 +12,10 @@ pub mod tokenizer;
 
 fn main() {
     let mut tokens = Vec::new();
-    let input = b"((32 + (1 / -6)))";
+    let input = b"int main () {int a 5; return a;}";
     tokenizer::tokenize(input, &mut tokens).unwrap();
     println!("{:?}", tokens);
     let lexer = tokens.into_iter();
-    let ast = parser::ExpParser::new().parse(input, lexer).unwrap();
+    let ast = parser::ProgramParser::new().parse(input, lexer).unwrap();
     println!("{:?}", ast);
 }

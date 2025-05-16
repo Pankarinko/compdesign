@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use crate::ast::{Exp, Binop};
+use crate::ast::{Program, Statement, Exp, Decl, Simp, Asnop, Lvalue, Binop};
 use crate::Token;
 use crate::tokenizer::Keyword;
 use crate::tokenizer::ArithmeticSymbolEqual;
@@ -53,7 +53,34 @@ extern {
     }
 }
 
+pub Statement: Statement<'a> = {
+    <decl:Decl> ";" => Statement::Decl(decl),
+    <simp:Simp> ";" => Statement::Simp(simp),
+    "return" <exp:Exp> ";" => Statement::Return(exp),
+}
 
+pub Decl: Decl<'a> = {
+    "int" <name:"ident"> => Decl::Declare(name),
+    "int" <name:"ident"> "=" <exp:Exp> => Decl::Assign((name, exp)),
+}
+
+pub Simp: Simp<'a> = {
+    <lvalue:Lvalue> <asnop:Asnop> <exp:Exp> => Simp::Simp((lvalue, asnop, exp)),
+}
+
+pub Lvalue: Lvalue<'a> = {
+    <name:"ident"> => Lvalue::Ident(name),
+    "(" <lvalue:Lvalue> ")" => Lvalue::Parenth(Box::new(lvalue)),
+}
+
+pub Asnop: Asnop = {
+    "+=" => Asnop::APlus,
+    "-=" => Asnop::AMinus,
+    "/=" => Asnop::ADiv,
+    "*=" => Asnop::AMult,
+    "%=" => Asnop::AMod,
+    "=" => Asnop::Assign,
+}
 
 pub Exp: Exp<'a> = {
     #[precedence(level="0")]
@@ -62,7 +89,7 @@ pub Exp: Exp<'a> = {
     <name:"ident"> => Exp::Ident(name),
     #[precedence(level="1")]  #[assoc(side="right")]
     "-" <e:Exp> => Exp::Negative(Box::new(e)),
-    #[precedence(level="2")] #[assoc(side="left")]
+    #[precedence(level="2")]  #[assoc(side="left")]
     <e1:Exp> "*" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::Mult, e2))),
     <e1:Exp> "/" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::Div, e2))),
     <e1:Exp> "%" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::Mod, e2))),
@@ -74,6 +101,12 @@ pub Exp: Exp<'a> = {
 pub TopExp: Exp<'a> = {
     <Exp>,
 }
+
+pub Program: Program<'a> = {
+    "int" "main" "(" ")" "{" <stmts:Statement*> "}"  => Program::Prog(stmts),
+}
+
+
 
 
 

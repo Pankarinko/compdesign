@@ -3,12 +3,12 @@ use crate::tokenizer::{self, ArithmeticSymbol, Keyword, Token};
 pub enum Statement<'a> {
     Decl(Decl<'a>),
     Simp(Simp<'a>),
-    Exp(Exp<'a>),
+    Return(Exp<'a>),
 }
 #[derive(Debug)]
 pub enum Decl<'a> {
-    Declare,
-    Assign(Exp<'a>),
+    Declare(&'a [u8]),
+    Assign((&'a [u8], Exp<'a>)),
 }
 #[derive(Debug)]
 pub enum Simp<'a> {
@@ -17,13 +17,7 @@ pub enum Simp<'a> {
 #[derive(Debug)]
 pub enum Lvalue<'a> {
     Ident(&'a [u8]),
-    Paranth(Box<Lvalue<'a>>),
-}
-
-#[derive(Debug)]
-pub enum StatementList<'a> {
-    Empty,
-    Statements((Statement<'a>, Box<StatementList<'a>>)),
+    Parenth(Box<Lvalue<'a>>),
 }
 
 #[derive(Debug)]
@@ -50,13 +44,8 @@ pub enum Asnop {
     AMod,
     Assign,
 }
-/*pub Program: Program<'a> {
-    <stmts:Sta => Program::Prog(StatementList<'a>),
-#[precedence(level="1")]  #[assoc(side="right")]
-    "-" <Exp>, => Exp::Negative(Box::new()),
-}*/
+
 #[derive(Debug)]
 pub enum Program<'a> {
-    Prog(StatementList<'a>),
-    Empty,
+    Prog(Vec<Statement<'a>>),
 }
