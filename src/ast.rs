@@ -1,10 +1,10 @@
-use crate::tokenizer::{self, ArithmeticSymbol, Keyword, Token};
 #[derive(Debug)]
 pub enum Statement<'a> {
     Decl(Decl<'a>),
     Simp(Simp<'a>),
     Return(Exp<'a>),
 }
+
 #[derive(Debug)]
 pub enum Decl<'a> {
     Declare(&'a [u8]),
@@ -48,4 +48,12 @@ pub enum Asnop {
 #[derive(Debug)]
 pub enum Program<'a> {
     Prog(Vec<Statement<'a>>),
+}
+
+impl<'a> Program<'a> {
+    pub fn get_statements(&'a self) -> &'a Vec<Statement<'a>> {
+        match self {
+            Program::Prog(statements) => return &statements,
+        }
+    }
 }

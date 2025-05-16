@@ -92,7 +92,6 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
     let end = input_string.len();
     let mut i = 0;
     loop {
-        println!("{i}");
         if i == end {
             return Ok(0);
         }
@@ -216,14 +215,12 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
             }
             _ => {}
         }
-        println!("{}", input_string[i] as char);
         match input_string[i] {
             b'a'..=b'z' | b'A'..=b'Z' | b'_' => {
                 let mut curr_end = i + 1;
                 while curr_end < end {
                     match input_string[curr_end] {
                         b'a'..=b'z' | b'A'..=b'Z' | b'_' | b'0'..=b'9' => {
-                            println!("{}", input_string[curr_end] as char);
                             curr_end += 1;
                         }
                         _ => {
