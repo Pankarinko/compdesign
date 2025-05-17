@@ -41,11 +41,7 @@ fn main() {
     /*let v = b"int main() { }";
     let input = &v[..];*/
     if let Err(e) = tokenize(&input, &mut tokens) {
-        if e == 7 {
-            exit(42);
-        } else {
-            exit(42);
-        }
+        exit(e)
     }
     let lexer = tokens.into_iter();
     let ast: Program<'_>;
@@ -62,4 +58,5 @@ fn main() {
         println!("stop 2");
         exit(7)
     }
+    exit(0)
 }
