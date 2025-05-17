@@ -97,6 +97,9 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
         if i == end {
             return Ok(0);
         }
+        if tokens.len() > 0x1000000 {
+            panic!("ich bin der übeltäter lol");
+        }
         let equals = b'=';
         match input_string[i] {
             b'+' => {
@@ -104,6 +107,7 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
                     tokens.push(Token::ArithmeticSymbolEqual(
                         ArithmeticSymbolEqual::PlusEqual,
                     ));
+                    i += 2;
                 } else {
                     tokens.push(Token::ArithmeticSymbol(ArithmeticSymbol::Plus));
                     i += 1;
@@ -174,7 +178,7 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
                     tokens.push(Token::ArithmeticSymbolEqual(
                         ArithmeticSymbolEqual::ModEqual,
                     ));
-                    i += 1;
+                    i += 2;
                 } else {
                     tokens.push(Token::ArithmeticSymbol(ArithmeticSymbol::Mod));
                     i += 1;

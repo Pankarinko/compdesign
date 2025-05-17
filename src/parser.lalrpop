@@ -70,7 +70,7 @@ pub Simp: Simp<'a> = {
 
 pub Lvalue: Lvalue<'a> = {
     <name:"ident"> => Lvalue::Ident(name),
-    "(" <lvalue:Lvalue> ")" => Lvalue::Parenth(Box::new(lvalue)),
+    "(" <Lvalue> ")",
 }
 
 pub Asnop: Asnop = {

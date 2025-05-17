@@ -14,10 +14,20 @@ pub enum Decl<'a> {
 pub enum Simp<'a> {
     Simp((Lvalue<'a>, Asnop, Exp<'a>)),
 }
+
 #[derive(Debug)]
 pub enum Lvalue<'a> {
     Ident(&'a [u8]),
     Parenth(Box<Lvalue<'a>>),
+}
+
+impl<'a> Lvalue<'a> {
+    pub fn get_ident_lvalue(&'a self) -> &'a [u8] {
+        match self {
+            Lvalue::Ident(ident) => return ident,
+            Lvalue::Parenth(lvalue) => return (*lvalue).get_ident_lvalue(),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -27,6 +37,7 @@ pub enum Exp<'a> {
     Arithmetic(Box<(Exp<'a>, Binop, Exp<'a>)>),
     Negative(Box<Exp<'a>>),
 }
+
 #[derive(Debug)]
 pub enum Binop {
     Plus,
