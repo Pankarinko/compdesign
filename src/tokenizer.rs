@@ -1,5 +1,7 @@
 use std::{fmt, u8};
 
+use crate::main;
+
 #[derive(Debug, Clone)]
 pub enum Token<'a> {
     Identifier(&'a [u8]),
@@ -149,7 +151,7 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
                     let mut open = 1;
                     while open > 0 {
                         if i + 1 > end {
-                            return Err(1);
+                            return Err(42);
                         }
                         if input_string[i] == b'/' && input_string[i + 1] == b'*' {
                             i += 1;
@@ -330,17 +332,21 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
                     i += 1;
                     if input_string[i] == b'x' || input_string[i] == b'X' {
                         i += 1;
-                        let mut temp_i = i;
+                        let mut temp_i = 0;
                         let mut hexval: i32 = 0;
-                        while let Some(digit) = convert_digit(&input_string[i]) {
+                        while let Some(digit) = convert_digit(&input_string[i + temp_i]) {
                             temp_i += 1;
+                            if temp_i > 8 {
+                                return Err(7);
+                            }
+
                             hexval = (hexval << 4) + digit;
                         }
-                        if i == temp_i {
-                            return Err(1);
+                        if temp_i == 0 {
+                            return Err(42);
                         }
                         tokens.push(Token::NumericValue(hexval));
-                        i = temp_i;
+                        i += temp_i;
                         continue;
                     } else {
                         tokens.push(Token::NumericValue(0));
@@ -350,16 +356,23 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
                     let mut decval: i32 = 0;
                     while let Some(digit) = convert_digit(&input_string[i]) {
                         if digit > 9 {
-                            continue;
+                            break;
                         }
                         i += 1;
-                        decval = decval * 10 + digit;
+
+                        if let Some(new_mul) = decval.checked_mul(10) {
+                            if let Some(new_add) = new_mul.checked_add(digit) {
+                                decval = new_add;
+                                continue;
+                            }
+                        }
+                        return Err(7);
                     }
                     tokens.push(Token::NumericValue(decval));
                     continue;
                 }
             }
-            _ => return Err(0),
+            _ => return Err(42),
         }
     }
 }

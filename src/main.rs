@@ -1,7 +1,7 @@
 use ast::Program;
 use lalrpop_util::lalrpop_mod;
 use semantics::return_check;
-use tokenizer::Token;
+use tokenizer::{Token, tokenize};
 
 lalrpop_mod!(
     #[allow(clippy::ptr_arg)]
@@ -15,9 +15,13 @@ pub mod tokenizer;
 
 fn main() {
     let mut tokens = Vec::new();
-    let input = b"int main () {int a = 5; return 0;}";
-    if tokenizer::tokenize(input, &mut tokens).is_err() {
-        todo!()
+    let input = b"int main () {int a = -5; return a;}";
+    if let Err(e) = tokenize(input, &mut tokens) {
+        if e == 7 {
+            todo!();
+        } else {
+            todo!();
+        }
     }
     println!("{:?}", tokens);
     let lexer = tokens.into_iter();
