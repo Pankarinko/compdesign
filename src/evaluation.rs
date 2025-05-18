@@ -22,21 +22,22 @@ pub fn create_binary(ast: Program<'_>, string: OsString) {
         syscall
         _main:
         movq ${}, %rax
-        ret",
+        ret
+",
                 code
             );
             let output_file = string.to_str().unwrap();
             /*let output_file = "this_file";*/
-            let mut comm = Command::new("gcc")
+            let mut child = Command::new("gcc")
                 .args(["-xassembler", "-o", output_file, "-"])
                 .stdin(Stdio::piped())
                 .spawn()
                 .expect("Failed to spawn child process");
-            let mut stdin = comm.stdin.take().expect("Failed to open stdin");
+            let mut stdin = child.stdin.as_mut().expect("Failed to open stdin");
             stdin
                 .write(file_string.as_bytes())
                 .expect("Failed to write to stdin");
-            println!("{:?}", comm);
+            child.wait().expect("gcc couldn't finish execution");
         }
         Err(code) => (),
     }
