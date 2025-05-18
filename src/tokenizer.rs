@@ -68,7 +68,7 @@ pub enum Keyword {
 }
 
 /* Converts ASCII hex digits represented as u8 to the corresponding 32-bit integer */
-fn convert_digit(digit: &u8) -> Option<i32> {
+fn convert_digit(digit: &u8) -> Option<u32> {
     Some(match digit {
         b'0' => 0,
         b'1' => 1,
@@ -339,7 +339,7 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
                     if input_string[i] == b'x' || input_string[i] == b'X' {
                         i += 1;
                         let mut temp_i = 0;
-                        let mut hexval: i32 = 0;
+                        let mut hexval: u32 = 0;
                         while let Some(digit) = convert_digit(&input_string[i + temp_i]) {
                             temp_i += 1;
                             if temp_i > 8 {
@@ -351,7 +351,7 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
                         if temp_i == 0 {
                             return Err(42);
                         }
-                        tokens.push(Token::NumericValue(hexval));
+                        tokens.push(Token::NumericValue(hexval.cast_signed()));
                         i += temp_i;
                         continue;
                     } else {
@@ -359,7 +359,7 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
                         continue;
                     }
                 } else {
-                    let mut decval: i32 = 0;
+                    let mut decval: u32 = 0;
                     while let Some(digit) = convert_digit(&input_string[i]) {
                         if digit > 9 {
                             break;
@@ -374,7 +374,7 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
                         }
                         return Err(7);
                     }
-                    tokens.push(Token::NumericValue(decval));
+                    tokens.push(Token::NumericValue(decval.cast_signed()));
                     continue;
                 }
             }

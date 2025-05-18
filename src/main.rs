@@ -6,7 +6,7 @@ use std::{
 };
 
 use ast::Program;
-use evaluation::create_binary;
+use evaluation::{create_binary, execute};
 use lalrpop_util::lalrpop_mod;
 use semantics::{decl_check, return_check};
 use tokenizer::{Token, tokenize};
@@ -51,7 +51,7 @@ return _Th1S_1S_th3_B3stt_V4r_N4ME_I_c0uld_TH1NK_of_*_Th1S_1S_th3_B3stt_V4r_N4ME
 ";
     let input = &v[..];*/
     if let Err(e) = tokenize(&input, &mut tokens) {
-        println!("Error is here");
+        println!("Lexer failed");
         exit(e)
     }
     let lexer = tokens.into_iter();
@@ -71,5 +71,5 @@ return _Th1S_1S_th3_B3stt_V4r_N4ME_I_c0uld_TH1NK_of_*_Th1S_1S_th3_B3stt_V4r_N4ME
         exit(7)
     }
     let string = args.next().unwrap().to_os_string();
-    create_binary(ast, string);
+    execute(ast, string);
 }

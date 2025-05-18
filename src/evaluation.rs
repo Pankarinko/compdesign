@@ -7,8 +7,12 @@ use std::{
 
 use crate::ast::{self, Exp, Program, Simp, Statement};
 
-pub fn create_binary(ast: Program<'_>, string: OsString) {
+pub fn execute(ast: Program<'_>, string: OsString) {
     let res = eval_program(ast.get_statements());
+    create_binary(res, string);
+}
+
+pub fn create_binary(res: Result<i32, i32>, string: OsString) {
     match res {
         Ok(code) => {
             let file_string = format!(
