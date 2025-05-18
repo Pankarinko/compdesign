@@ -94,6 +94,7 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
     let end = input_string.len();
     let mut i = 0;
     loop {
+        //println!("{:?}", tokens.last());
         if i == end {
             return Ok(0);
         }
@@ -144,6 +145,7 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
                         ArithmeticSymbolEqual::DivEqual,
                     ));
                     i += 2;
+                    continue;
                 }
                 if input_string[i + 1] == b'/' {
                     while i != end && input_string[i] != b'\n' {

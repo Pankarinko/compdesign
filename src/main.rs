@@ -51,13 +51,17 @@ return _Th1S_1S_th3_B3stt_V4r_N4ME_I_c0uld_TH1NK_of_*_Th1S_1S_th3_B3stt_V4r_N4ME
 ";
     let input = &v[..];*/
     if let Err(e) = tokenize(&input, &mut tokens) {
+        println!("Error is here");
         exit(e)
     }
     let lexer = tokens.into_iter();
+
     let ast: Program<'_>;
+
     if let Ok(result) = parser::ProgramParser::new().parse(&input, lexer) {
-        ast = result
+        ast = result;
     } else {
+        println!("parser failed");
         exit(42)
     }
     if !return_check(ast.get_statements()) {
