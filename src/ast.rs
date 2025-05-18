@@ -18,14 +18,12 @@ pub enum Simp<'a> {
 #[derive(Debug)]
 pub enum Lvalue<'a> {
     Ident(&'a [u8]),
-    Parenth(Box<Lvalue<'a>>),
 }
 
 impl<'a> Lvalue<'a> {
-    pub fn get_ident_lvalue(&'a self) -> &'a [u8] {
+    pub fn get_ident_lvalue(&self) -> &'a [u8] {
         match self {
             Lvalue::Ident(ident) => return ident,
-            Lvalue::Parenth(lvalue) => return (*lvalue).get_ident_lvalue(),
         }
     }
 }
