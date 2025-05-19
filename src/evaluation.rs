@@ -91,12 +91,12 @@ fn eval_stmt<'a>(
         Statement::Decl(decl) => match decl {
             ast::Decl::Declare(_) => Ok(None),
             ast::Decl::Assign((ident, exp)) => {
-                let mess = idents.insert(*ident, eval_exp(exp, idents)?);
+                let _mess = idents.insert(*ident, eval_exp(exp, idents)?);
                 Ok(None)
             }
         },
         Statement::Simp(Simp::Simp((lvalue, _, exp))) => {
-            let mess = idents.insert(lvalue.get_ident_lvalue(), eval_exp(exp, idents)?);
+            let _mess = idents.insert(lvalue.get_ident_lvalue(), eval_exp(exp, idents)?);
             Ok(None)
         }
         Statement::Return(exp) => Ok(Some(eval_exp(exp, idents)?)),

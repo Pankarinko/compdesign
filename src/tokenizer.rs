@@ -375,11 +375,13 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
                         if let Some(new_mul) = decval.checked_mul(10) {
                             if let Some(new_add) = new_mul.checked_add(digit) {
                                 decval = new_add;
+                                if decval > 0x80000000 {
+                                    return Err(7);
+                                }
                                 continue;
                             }
-                            if decval > 0x800000 {
-                                return Err(7);
-                            }
+
+                            return Err(7);
                         }
                         return Err(7);
                     }
