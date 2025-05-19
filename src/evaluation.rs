@@ -77,7 +77,6 @@ fn eval_program<'a>(statements: &'a Vec<Statement<'a>>) -> Result<i32, i32> {
     let mut used_idents: HashMap<&'a [u8], i32> = HashMap::new();
     for stmt in statements.iter() {
         if let Some(res) = eval_stmt(stmt, &mut used_idents)? {
-            println!("{res}");
             return Ok(res);
         }
     }
@@ -92,22 +91,15 @@ fn eval_stmt<'a>(
         Statement::Decl(decl) => match decl {
             ast::Decl::Declare(_) => Ok(None),
             ast::Decl::Assign((ident, exp)) => {
-                println!("{:?}", exp);
                 let mess = idents.insert(*ident, eval_exp(exp, idents)?);
-                println!("{:?}", mess);
                 Ok(None)
             }
         },
         Statement::Simp(Simp::Simp((lvalue, _, exp))) => {
-            println!("{:?}", exp);
             let mess = idents.insert(lvalue.get_ident_lvalue(), eval_exp(exp, idents)?);
-            println!("{:?}", mess);
             Ok(None)
         }
-        Statement::Return(exp) => {
-            println!("{:?}", exp);
-            Ok(Some(eval_exp(exp, idents)?))
-        }
+        Statement::Return(exp) => Ok(Some(eval_exp(exp, idents)?)),
     }
 }
 

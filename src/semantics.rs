@@ -38,9 +38,6 @@ pub fn decl_check<'a>(statements: &'a Vec<Statement<'a>>) -> bool {
     let mut decls: Vec<&'a [u8]> = Vec::new();
     let mut assignments: Vec<&'a [u8]> = Vec::new();
     for (i, stmt) in statements.iter().enumerate() {
-        println!("{:?}", stmt);
-        println!("{:?}", decls);
-        println!("{:?}", assignments);
         match stmt {
             Statement::Decl(decl) => match decl {
                 crate::ast::Decl::Declare(ident) => {
