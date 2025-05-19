@@ -33,63 +33,63 @@ fn is_contained<'a>(e: &Exp<'a>, vec: &mut Vec<&'a [u8]>) -> bool {
     }
 }
 
-pub fn decl_check<'a>(statements: &'a Vec<Statement<'a>>) -> bool {
-    let mut idents: HashMap<&'a [u8], usize> = HashMap::new();
-    let mut decls: Vec<&'a [u8]> = Vec::new();
-    let mut assignments: Vec<&'a [u8]> = Vec::new();
-    for (i, stmt) in statements.iter().enumerate() {
-        match stmt {
-            Statement::Decl(decl) => match decl {
-                crate::ast::Decl::Declare(ident) => {
-                    if decls.contains(ident) || assignments.contains(ident) {
-                        return false;
-                    };
-                    decls.push(*ident);
+pub fn decl_check<'a>(
+    stmt: &Statement<'a>,
+    i: usize,
+    idents: &mut HashMap<&'a [u8], usize>,
+    decls: &mut Vec<&'a [u8]>,
+    assignments: &mut Vec<&'a [u8]>,
+) -> bool {
+    match stmt {
+        Statement::Decl(decl) => match decl {
+            crate::ast::Decl::Declare(ident) => {
+                if decls.contains(&ident) || assignments.contains(&ident) {
+                    return false;
+                };
+                decls.push(ident);
+            }
+            crate::ast::Decl::Assign(a) => {
+                if decls.contains(&a.0) || assignments.contains(&a.0) {
+                    return false;
                 }
-                crate::ast::Decl::Assign(a) => {
-                    if decls.contains(&a.0) || assignments.contains(&a.0) {
-                        return false;
+                assignments.push(a.0);
+                let e = &a.1;
+                get_ident(e, i, idents);
+            }
+        },
+        Statement::Simp(simp) => match simp {
+            Simp::Simp((lval, asnop, exp)) => {
+                let ident = lval.get_ident_lvalue();
+                match asnop {
+                    Asnop::Assign => {
+                        if !decls.contains(&ident) && !assignments.contains(&ident) {
+                            return false;
+                        } else if !is_contained(&exp, assignments) {
+                            return false;
+                        }
+                        if !assignments.contains(&ident) {
+                            assignments.push(&ident);
+                        }
                     }
-                    assignments.push(a.0);
-                    let e = &a.1;
-                    get_ident(e, i, &mut idents);
-                }
-            },
-            Statement::Simp(simp) => match simp {
-                Simp::Simp((lval, asnop, exp)) => {
-                    let ident = lval.get_ident_lvalue();
-                    match asnop {
-                        Asnop::Assign => {
-                            if !decls.contains(&ident) && !assignments.contains(&ident) {
-                                return false;
-                            } else if !is_contained(exp, &mut assignments) {
-                                return false;
-                            }
-                            if !assignments.contains(&ident) {
-                                assignments.push(&ident);
-                            }
+                    _ => {
+                        if !assignments.contains(&ident) {
+                            return false;
                         }
-                        _ => {
-                            if !assignments.contains(&ident) {
-                                return false;
-                            }
-                        }
-                    };
-                    get_ident(&exp, i, &mut idents);
-                }
-            },
-            Statement::Return(exp) => get_ident(exp, i, &mut idents),
-        }
+                    }
+                };
+                get_ident(&exp, i, idents);
+            }
+        },
+        Statement::Return(exp) => get_ident(&exp, i, idents),
     }
-
     for (i, assignment) in assignments.into_iter().enumerate() {
-        if let Some(index) = idents.remove(assignment) {
-            if i >= index {
+        if let Some(index) = idents.get(assignment) {
+            if i >= *index {
                 return false;
             }
         }
     }
-    if !idents.is_empty() {
+    if assignments.len() < idents.len() {
         return false;
     }
     return true;

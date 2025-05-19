@@ -5,7 +5,10 @@ use std::{
     process::{Command, Stdio, id},
 };
 
-use crate::ast::{self, Exp, Program, Simp, Statement};
+use crate::{
+    ast::{self, Exp, Program, Simp, Statement},
+    semantics::decl_check,
+};
 
 pub fn execute(ast: Program<'_>, string: OsString) {
     let res = eval_program(ast.get_statements());
@@ -75,7 +78,13 @@ pub fn create_binary(res: Result<i32, i32>, string: OsString) {
 
 fn eval_program<'a>(statements: &'a Vec<Statement<'a>>) -> Result<i32, i32> {
     let mut used_idents: HashMap<&'a [u8], i32> = HashMap::new();
-    for stmt in statements.iter() {
+    let mut idents: HashMap<&'a [u8], usize> = HashMap::new();
+    let mut decls: Vec<&'a [u8]> = Vec::new();
+    let mut assignments: Vec<&'a [u8]> = Vec::new();
+    for (i, stmt) in statements.iter().enumerate() {
+        if !decl_check(stmt, i, &mut idents, &mut decls, &mut assignments) {
+            return Err(7);
+        }
         if let Some(res) = eval_stmt(stmt, &mut used_idents)? {
             return Ok(res);
         }

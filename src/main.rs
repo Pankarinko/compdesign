@@ -67,9 +67,6 @@ return _Th1S_1S_th3_B3stt_V4r_N4ME_I_c0uld_TH1NK_of_*_Th1S_1S_th3_B3stt_V4r_N4ME
     if !return_check(ast.get_statements()) {
         exit(7)
     }
-    if !decl_check(ast.get_statements()) {
-        exit(7)
-    }
     let string = args.next().unwrap().to_os_string();
     execute(ast, string);
 }
