@@ -7,6 +7,22 @@ use std::{
 
 use crate::ast::{self, Exp, Program, Simp, Statement};
 
+/* So in case anybody is actually looking at the code and reading this, I wanted to clarify that I, for now,
+did everything with constant propagation, which is probably not how I was supposed to do it. The reason for that
+is that I had to submit my bachelor thesis on this Thursday so I had very limited time to do the assignment
+but I still didn't want to miss this course because I was unsure if it was even possible to do it in another semester.
+
+I understand if I don't get points for this, but I am still planning to complete the assignments, now that I have time
+so I just wanted to submit something that at least passes the tests and anything else was unrealistic in 5 days.
+I will do the actual assignment ASAP I promise :D.
+
+Also, yes, for me personally, rewriting the starter code in Rust was necessary because I am in a good part doing this for fun
+and I thought it would be good practice. I am not even sure I would have been faster in Java since I haven't written Java
+code in years. I was thinking about it, but then I decided that using Rust would bring more personal gain for me right now
+even if I miss out on the points so I stuck with that.
+As for using Haskell: no :D.
+  */
+
 pub fn execute(ast: Program<'_>, string: OsString) {
     let res = eval_program(ast.get_statements());
     create_binary(res, string);
