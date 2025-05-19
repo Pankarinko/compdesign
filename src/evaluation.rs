@@ -8,9 +8,7 @@ use std::{
 use crate::ast::{self, Exp, Program, Simp, Statement};
 
 pub fn execute(ast: Program<'_>, string: OsString) {
-    println!("execute");
     let res = eval_program(ast.get_statements());
-    println!("{res:?} create binary");
     create_binary(res, string);
 }
 
@@ -79,11 +77,9 @@ fn eval_program<'a>(statements: &'a Vec<Statement<'a>>) -> Result<i32, i32> {
     let mut used_idents: HashMap<&'a [u8], i32> = HashMap::new();
     for stmt in statements.iter() {
         if let Some(res) = eval_stmt(stmt, &mut used_idents)? {
-            println!("{res}");
             return Ok(res);
         }
     }
-    println!("Why am I here");
     Ok(0)
 }
 
@@ -91,7 +87,6 @@ fn eval_stmt<'a>(
     stmt: &Statement<'a>,
     idents: &mut HashMap<&'a [u8], i32>,
 ) -> Result<Option<i32>, i32> {
-    println!("{:?}", stmt);
     match stmt {
         Statement::Decl(decl) => match decl {
             ast::Decl::Declare(_) => Ok(None),
@@ -104,15 +99,11 @@ fn eval_stmt<'a>(
             let _mess = idents.insert(lvalue.get_ident_lvalue(), eval_exp(exp, idents)?);
             Ok(None)
         }
-        Statement::Return(exp) => {
-            println! {"I have arrived"};
-            Ok(Some(eval_exp(exp, idents)?))
-        }
+        Statement::Return(exp) => Ok(Some(eval_exp(exp, idents)?)),
     }
 }
 
 fn eval_exp<'a>(exp: &Exp<'a>, idents: &HashMap<&'a [u8], i32>) -> Result<i32, i32> {
-    println!("{:?}", exp);
     match exp {
         Exp::Intconst(c) => return Ok(*c),
         Exp::Ident(name) => {
