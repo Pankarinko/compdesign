@@ -81,9 +81,6 @@ fn eval_program<'a>(statements: &'a Vec<Statement<'a>>) -> Result<i32, i32> {
     let mut decls: Vec<&'a [u8]> = Vec::new();
     let mut assignments: Vec<&'a [u8]> = Vec::new();
     for stmt in statements.iter() {
-        if !decl_check(stmt, &mut decls, &mut assignments) {
-            exit(7);
-        }
         if let Some(res) = eval_stmt(stmt, &mut used_idents)? {
             return Ok(res);
         }
