@@ -156,7 +156,7 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
                     i += 2;
                     let mut open = 1;
                     while open > 0 {
-                        if i + 1 > end {
+                        if i + 1 >= end {
                             return Err(42);
                         }
                         if input_string[i] == b'/' && input_string[i + 1] == b'*' {
@@ -370,6 +370,9 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
                             if let Some(new_add) = new_mul.checked_add(digit) {
                                 decval = new_add;
                                 continue;
+                            }
+                            if decval > 0x800000 {
+                                return Err(7);
                             }
                         }
                         return Err(7);

@@ -31,8 +31,16 @@ pub fn decl_check<'a>(statements: &'a Vec<Statement<'a>>) -> bool {
     for (i, stmt) in statements.iter().enumerate() {
         match stmt {
             Statement::Decl(decl) => match decl {
-                crate::ast::Decl::Declare(ident) => decls.push(*ident),
+                crate::ast::Decl::Declare(ident) => {
+                    if decls.contains(ident) || assignments.contains(ident) {
+                        return false;
+                    };
+                    decls.push(*ident);
+                }
                 crate::ast::Decl::Assign(a) => {
+                    if decls.contains(&a.0) || assignments.contains(&a.0) {
+                        return false;
+                    }
                     assignments.push(a.0);
                     let e = &a.1;
                     get_ident(e, i, &mut idents);
