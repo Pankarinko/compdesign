@@ -93,6 +93,7 @@ fn convert_digit(digit: &u8) -> Option<u32> {
 pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Result<i32, i32> {
     let end = input_string.len();
     let mut i = 0;
+    let mut in_main = false;
     loop {
         //println!("{:?}", tokens.last());
         if i == end {
@@ -240,7 +241,12 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
                 i += word.len();
                 match word {
                     b"main" => {
-                        tokens.push(Token::Main);
+                        if in_main {
+                            tokens.push(Token::Identifier(word));
+                        } else {
+                            tokens.push(Token::Main);
+                            in_main = true;
+                        }
                         continue;
                     }
                     b"struct" => {

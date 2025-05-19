@@ -76,7 +76,6 @@ pub fn create_binary(res: Result<i32, i32>, string: OsString) {
 fn eval_program<'a>(statements: &'a Vec<Statement<'a>>) -> Result<i32, i32> {
     let mut used_idents: HashMap<&'a [u8], i32> = HashMap::new();
     for stmt in statements.iter() {
-        println!("{:?}", stmt);
         if let Some(res) = eval_stmt(stmt, &mut used_idents)? {
             println!("{res}");
             return Ok(res);

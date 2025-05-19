@@ -24,11 +24,23 @@ fn get_ident<'a>(e: &Exp<'a>, index: usize, occur: &mut HashMap<&'a [u8], usize>
     }
 }
 
+fn is_contained<'a>(e: &Exp<'a>, vec: &mut Vec<&'a [u8]>) -> bool {
+    match e {
+        Exp::Ident(ident) => vec.contains(ident),
+        Exp::Arithmetic(exps) => is_contained(&(*exps).0, vec) && is_contained(&(*exps).2, vec),
+        Exp::Negative(exp) => is_contained(exp, vec),
+        Exp::Intconst(_) => true,
+    }
+}
+
 pub fn decl_check<'a>(statements: &'a Vec<Statement<'a>>) -> bool {
     let mut idents: HashMap<&'a [u8], usize> = HashMap::new();
     let mut decls: Vec<&'a [u8]> = Vec::new();
     let mut assignments: Vec<&'a [u8]> = Vec::new();
     for (i, stmt) in statements.iter().enumerate() {
+        println!("{:?}", stmt);
+        println!("{:?}", decls);
+        println!("{:?}", assignments);
         match stmt {
             Statement::Decl(decl) => match decl {
                 crate::ast::Decl::Declare(ident) => {
@@ -53,7 +65,10 @@ pub fn decl_check<'a>(statements: &'a Vec<Statement<'a>>) -> bool {
                         Asnop::Assign => {
                             if !decls.contains(&ident) && !assignments.contains(&ident) {
                                 return false;
-                            } else if !assignments.contains(&ident) {
+                            } else if !is_contained(exp, &mut assignments) {
+                                return false;
+                            }
+                            if !assignments.contains(&ident) {
                                 assignments.push(&ident);
                             }
                         }
