@@ -137,7 +137,7 @@ fn eval_stmt<'a>(
 
 fn eval_exp<'a>(exp: &Exp<'a>, idents: &HashMap<&'a [u8], i32>) -> Result<i32, i32> {
     match exp {
-        Exp::Intconst(c) => return Ok(*c),
+        Exp::Intconst(c) => Ok(*c),
         Exp::Ident(name) => idents.get(name).copied().ok_or(-1),
         Exp::Arithmetic(arith) => match arith.1 {
             ast::Binop::Plus => {

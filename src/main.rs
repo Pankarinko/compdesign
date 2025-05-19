@@ -40,11 +40,6 @@ fn main() {
         println!("Unable to read file!");
         exit(42);
     };
-    /*let v = b"int main() {
-int _Th1S_1S_th3_B3stt_V4r_N4ME_I_c0uld_TH1NK_of_ = 2;
-return _Th1S_1S_th3_B3stt_V4r_N4ME_I_c0uld_TH1NK_of_*_Th1S_1S_th3_B3stt_V4r_N4ME_I_c0uld_TH1NK_of_;}
-";
-    let input = &v[..];*/
     if let Err(e) = tokenize(&input, &mut tokens) {
         println!("Lexer failed");
         exit(e)

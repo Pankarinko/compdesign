@@ -380,7 +380,6 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
                                 }
                                 continue;
                             }
-
                             return Err(7);
                         }
                         return Err(7);

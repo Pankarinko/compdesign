@@ -1,33 +1,13 @@
-use std::{collections::HashMap, process::id};
-
 use crate::ast::{Asnop, Exp, Simp, Statement};
 
 pub fn return_check(statements: &Vec<Statement<'_>>) -> bool {
-    return statements.iter().any(|s| match s {
-        Statement::Return(_) => return true,
-        _ => return false,
-    });
-}
-
-fn get_ident<'a>(e: &Exp<'a>, index: usize, occur: &mut HashMap<&'a [u8], usize>) {
-    match e {
-        Exp::Ident(ident) => {
-            occur.entry(ident).or_insert(index);
-            ()
-        }
-        Exp::Arithmetic(exps) => {
-            get_ident(&(*exps).0, index, occur);
-            get_ident(&(*exps).2, index, occur);
-        }
-        Exp::Negative(exp) => get_ident(exp, index, occur),
-        Exp::Intconst(_) => (),
-    }
+    statements.iter().any(|s| matches!(s, Statement::Return(_)))
 }
 
 fn is_contained<'a>(e: &Exp<'a>, vec: &mut Vec<&'a [u8]>) -> bool {
     match e {
         Exp::Ident(ident) => vec.contains(ident),
-        Exp::Arithmetic(exps) => is_contained(&(*exps).0, vec) && is_contained(&(*exps).2, vec),
+        Exp::Arithmetic(exps) => is_contained(&exps.0, vec) && is_contained(&exps.2, vec),
         Exp::Negative(exp) => is_contained(exp, vec),
         Exp::Intconst(_) => true,
     }
@@ -40,7 +20,7 @@ pub fn decl_check<'a>(statements: &'a Vec<Statement<'a>>) -> bool {
         match stmt {
             Statement::Decl(decl) => match decl {
                 crate::ast::Decl::Declare(ident) => {
-                    if decls.contains(&ident) || assignments.contains(&ident) {
+                    if decls.contains(ident) || assignments.contains(ident) {
                         return false;
                     };
                     decls.push(ident);
@@ -51,7 +31,7 @@ pub fn decl_check<'a>(statements: &'a Vec<Statement<'a>>) -> bool {
                     }
                     assignments.push(a.0);
                     let e = &a.1;
-                    if !is_contained(&e, &mut assignments) {
+                    if !is_contained(e, &mut assignments) {
                         return false;
                     };
                 }
