@@ -23,7 +23,7 @@ pub enum Lvalue<'a> {
 impl<'a> Lvalue<'a> {
     pub fn get_ident_lvalue(&self) -> &'a [u8] {
         match self {
-            Lvalue::Ident(ident) => return ident,
+            Lvalue::Ident(ident) => ident,
         }
     }
 }
@@ -62,7 +62,7 @@ pub enum Program<'a> {
 impl<'a> Program<'a> {
     pub fn get_statements(&'a self) -> &'a Vec<Statement<'a>> {
         match self {
-            Program::Prog(statements) => return &statements,
+            Program::Prog(statements) => &statements,
         }
     }
 }
