@@ -35,8 +35,6 @@ fn is_contained<'a>(e: &Exp<'a>, vec: &mut Vec<&'a [u8]>) -> bool {
 
 pub fn decl_check<'a>(
     stmt: &Statement<'a>,
-    i: usize,
-    idents: &mut HashMap<&'a [u8], usize>,
     decls: &mut Vec<&'a [u8]>,
     assignments: &mut Vec<&'a [u8]>,
 ) -> bool {
@@ -54,7 +52,9 @@ pub fn decl_check<'a>(
                 }
                 assignments.push(a.0);
                 let e = &a.1;
-                get_ident(e, i, idents);
+                if !is_contained(&e, assignments) {
+                    return false;
+                };
             }
         },
         Statement::Simp(simp) => match simp {
@@ -77,20 +77,16 @@ pub fn decl_check<'a>(
                         }
                     }
                 };
-                get_ident(&exp, i, idents);
+                if !is_contained(&exp, assignments) {
+                    return false;
+                };
             }
         },
-        Statement::Return(exp) => get_ident(&exp, i, idents),
-    }
-    for (i, assignment) in assignments.into_iter().enumerate() {
-        if let Some(index) = idents.get(assignment) {
-            if i >= *index {
+        Statement::Return(exp) => {
+            if !is_contained(&exp, assignments) {
                 return false;
             }
         }
-    }
-    if assignments.len() < idents.len() {
-        return false;
     }
     return true;
 }
