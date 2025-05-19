@@ -2,16 +2,15 @@ use std::{
     collections::HashMap,
     ffi::OsString,
     io::Write,
-    process::{Command, Stdio, exit, id},
+    process::{Command, Stdio},
 };
 
-use crate::{
-    ast::{self, Exp, Program, Simp, Statement},
-    semantics::decl_check,
-};
+use crate::ast::{self, Exp, Program, Simp, Statement};
 
 pub fn execute(ast: Program<'_>, string: OsString) {
+    println!("execute");
     let res = eval_program(ast.get_statements());
+    println!("{res:?} create binary");
     create_binary(res, string);
 }
 
@@ -78,13 +77,13 @@ pub fn create_binary(res: Result<i32, i32>, string: OsString) {
 
 fn eval_program<'a>(statements: &'a Vec<Statement<'a>>) -> Result<i32, i32> {
     let mut used_idents: HashMap<&'a [u8], i32> = HashMap::new();
-    let mut decls: Vec<&'a [u8]> = Vec::new();
-    let mut assignments: Vec<&'a [u8]> = Vec::new();
     for stmt in statements.iter() {
         if let Some(res) = eval_stmt(stmt, &mut used_idents)? {
+            println!("{res}");
             return Ok(res);
         }
     }
+    println!("Why am I here");
     Ok(0)
 }
 
@@ -92,6 +91,7 @@ fn eval_stmt<'a>(
     stmt: &Statement<'a>,
     idents: &mut HashMap<&'a [u8], i32>,
 ) -> Result<Option<i32>, i32> {
+    println!("{:?}", stmt);
     match stmt {
         Statement::Decl(decl) => match decl {
             ast::Decl::Declare(_) => Ok(None),
@@ -104,11 +104,15 @@ fn eval_stmt<'a>(
             let _mess = idents.insert(lvalue.get_ident_lvalue(), eval_exp(exp, idents)?);
             Ok(None)
         }
-        Statement::Return(exp) => Ok(Some(eval_exp(exp, idents)?)),
+        Statement::Return(exp) => {
+            println! {"I have arrived"};
+            Ok(Some(eval_exp(exp, idents)?))
+        }
     }
 }
 
 fn eval_exp<'a>(exp: &Exp<'a>, idents: &HashMap<&'a [u8], i32>) -> Result<i32, i32> {
+    println!("{:?}", exp);
     match exp {
         Exp::Intconst(c) => return Ok(*c),
         Exp::Ident(name) => {
@@ -134,13 +138,13 @@ fn eval_exp<'a>(exp: &Exp<'a>, idents: &HashMap<&'a [u8], i32>) -> Result<i32, i
             ast::Binop::Div => {
                 if let Ok(e1) = eval_exp(&arith.0, idents) {
                     if let Ok(e2) = eval_exp(&arith.2, idents) {
-                        if e2 == 0 {
-                            /*return floating point error if divided by zero*/
+                        if let Some(res) = e1.checked_div(e2) {
+                            return Ok(res);
+                        } else {
                             return Err(15);
                         }
-                        return Ok(e1.wrapping_div(e2));
                     }
-                };
+                }
                 return Err(-1);
             }
             ast::Binop::Mult => {
@@ -155,6 +159,7 @@ fn eval_exp<'a>(exp: &Exp<'a>, idents: &HashMap<&'a [u8], i32>) -> Result<i32, i
                 if let Ok(e1) = eval_exp(&arith.0, idents) {
                     if let Ok(e2) = eval_exp(&arith.2, idents) {
                         if let Some(res) = e1.checked_rem(e2) {
+                            return Ok(res);
                         } else {
                             return Err(15);
                         }
