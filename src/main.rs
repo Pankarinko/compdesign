@@ -1,12 +1,7 @@
-use std::{
-    fmt::format,
-    fs::File,
-    io::{Read, Write},
-    process::{Command, Stdio, exit},
-};
+use std::{fs::File, io::Read, process::exit};
 
 use ast::Program;
-use evaluation::{create_binary, execute};
+use evaluation::execute;
 use lalrpop_util::lalrpop_mod;
 use semantics::{decl_check, return_check};
 use tokenizer::{Token, tokenize};
@@ -41,7 +36,7 @@ fn main() {
         }
     }
     let mut input = Vec::new();
-    if let Err(_) = file.read_to_end(&mut input) {
+    if file.read_to_end(&mut input).is_err() {
         println!("Unable to read file!");
         exit(42);
     };
@@ -70,7 +65,6 @@ return _Th1S_1S_th3_B3stt_V4r_N4ME_I_c0uld_TH1NK_of_*_Th1S_1S_th3_B3stt_V4r_N4ME
     if !decl_check(ast.get_statements()) {
         exit(7)
     }
-    println!("{:?}", ast);
     let string = args.next().unwrap().to_os_string();
     execute(ast, string);
 }

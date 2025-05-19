@@ -61,13 +61,13 @@ pub fn decl_check<'a>(statements: &'a Vec<Statement<'a>>) -> bool {
                     let ident = lval.get_ident_lvalue();
                     match asnop {
                         Asnop::Assign => {
-                            if !decls.contains(&ident) && !assignments.contains(&ident) {
-                                return false;
-                            } else if !is_contained(&exp, &mut assignments) {
+                            if (!decls.contains(&ident) && !assignments.contains(&ident))
+                                || !is_contained(exp, &mut assignments)
+                            {
                                 return false;
                             }
                             if !assignments.contains(&ident) {
-                                assignments.push(&ident);
+                                assignments.push(ident);
                             }
                         }
                         _ => {
@@ -76,17 +76,17 @@ pub fn decl_check<'a>(statements: &'a Vec<Statement<'a>>) -> bool {
                             }
                         }
                     };
-                    if !is_contained(&exp, &mut assignments) {
+                    if !is_contained(exp, &mut assignments) {
                         return false;
                     };
                 }
             },
             Statement::Return(exp) => {
-                if !is_contained(&exp, &mut assignments) {
+                if !is_contained(exp, &mut assignments) {
                     return false;
                 }
             }
         }
     }
-    return true;
+    true
 }

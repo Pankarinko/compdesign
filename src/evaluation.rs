@@ -25,10 +25,9 @@ pub fn create_binary(res: Result<i32, i32>, string: OsString) {
         movq $0x3C, %rax
         syscall
         _main:
-        movq ${}, %rax
+        movq ${code}, %rax
         ret
-",
-                code
+"
             );
             let output_file = string.to_str().unwrap();
             /*let output_file = "this_file";*/
@@ -39,7 +38,7 @@ pub fn create_binary(res: Result<i32, i32>, string: OsString) {
                 .expect("Failed to spawn child process");
             let stdin = child.stdin.as_mut().expect("Failed to open stdin");
             stdin
-                .write(file_string.as_bytes())
+                .write_all(file_string.as_bytes())
                 .expect("Failed to write to stdin");
             child.wait().expect("gcc couldn't finish execution");
         }
@@ -66,7 +65,7 @@ pub fn create_binary(res: Result<i32, i32>, string: OsString) {
                 .expect("Failed to spawn child process");
             let stdin = child.stdin.as_mut().expect("Failed to open stdin");
             stdin
-                .write(file_string.as_bytes())
+                .write_all(file_string.as_bytes())
                 .expect("Failed to write to stdin");
             child.wait().expect("gcc couldn't finish execution");
         }
@@ -95,8 +94,41 @@ fn eval_stmt<'a>(
                 Ok(None)
             }
         },
-        Statement::Simp(Simp::Simp((lvalue, _, exp))) => {
-            let _mess = idents.insert(lvalue.get_ident_lvalue(), eval_exp(exp, idents)?);
+        Statement::Simp(Simp::Simp((lvalue, asnop, exp))) => {
+            let second_param = eval_exp(exp, idents)?;
+            match asnop {
+                ast::Asnop::APlus => {
+                    let val = idents.get_mut(lvalue.get_ident_lvalue()).ok_or(-1)?;
+                    *val = (*val).wrapping_add(second_param);
+                }
+                ast::Asnop::AMinus => {
+                    let val = idents.get_mut(lvalue.get_ident_lvalue()).ok_or(-1)?;
+                    *val = (*val).wrapping_sub(second_param);
+                }
+                ast::Asnop::ADiv => {
+                    let val = idents.get_mut(lvalue.get_ident_lvalue()).ok_or(-1)?;
+                    if let Some(res) = (*val).checked_div(second_param) {
+                        *val = res;
+                        return Ok(None);
+                    }
+                    return Err(-1);
+                }
+                ast::Asnop::AMult => {
+                    let val = idents.get_mut(lvalue.get_ident_lvalue()).ok_or(-1)?;
+                    *val = (*val).wrapping_mul(second_param);
+                }
+                ast::Asnop::AMod => {
+                    let val = idents.get_mut(lvalue.get_ident_lvalue()).ok_or(-1)?;
+                    if let Some(res) = (*val).checked_rem(second_param) {
+                        *val = res;
+                        return Ok(None);
+                    }
+                    return Err(-1);
+                }
+                ast::Asnop::Assign => {
+                    let _mess = idents.insert(lvalue.get_ident_lvalue(), eval_exp(exp, idents)?);
+                }
+            }
             Ok(None)
         }
         Statement::Return(exp) => Ok(Some(eval_exp(exp, idents)?)),
@@ -106,9 +138,7 @@ fn eval_stmt<'a>(
 fn eval_exp<'a>(exp: &Exp<'a>, idents: &HashMap<&'a [u8], i32>) -> Result<i32, i32> {
     match exp {
         Exp::Intconst(c) => return Ok(*c),
-        Exp::Ident(name) => {
-            return idents.get(name).copied().ok_or(-1);
-        }
+        Exp::Ident(name) => idents.get(name).copied().ok_or(-1),
         Exp::Arithmetic(arith) => match arith.1 {
             ast::Binop::Plus => {
                 if let Ok(e1) = eval_exp(&arith.0, idents) {
@@ -116,7 +146,7 @@ fn eval_exp<'a>(exp: &Exp<'a>, idents: &HashMap<&'a [u8], i32>) -> Result<i32, i
                         return Ok(e1.wrapping_add(e2));
                     }
                 }
-                return Err(-1);
+                Err(-1)
             }
             ast::Binop::Minus => {
                 if let Ok(e1) = eval_exp(&arith.0, idents) {
@@ -124,7 +154,7 @@ fn eval_exp<'a>(exp: &Exp<'a>, idents: &HashMap<&'a [u8], i32>) -> Result<i32, i
                         return Ok(e1.wrapping_sub(e2));
                     }
                 }
-                return Err(-1);
+                Err(-1)
             }
             ast::Binop::Div => {
                 if let Ok(e1) = eval_exp(&arith.0, idents) {
@@ -136,7 +166,7 @@ fn eval_exp<'a>(exp: &Exp<'a>, idents: &HashMap<&'a [u8], i32>) -> Result<i32, i
                         }
                     }
                 }
-                return Err(-1);
+                Err(-1)
             }
             ast::Binop::Mult => {
                 if let Ok(e1) = eval_exp(&arith.0, idents) {
@@ -144,7 +174,7 @@ fn eval_exp<'a>(exp: &Exp<'a>, idents: &HashMap<&'a [u8], i32>) -> Result<i32, i
                         return Ok(e1.wrapping_mul(e2));
                     }
                 }
-                return Err(-1);
+                Err(-1)
             }
             ast::Binop::Mod => {
                 if let Ok(e1) = eval_exp(&arith.0, idents) {
@@ -156,12 +186,12 @@ fn eval_exp<'a>(exp: &Exp<'a>, idents: &HashMap<&'a [u8], i32>) -> Result<i32, i
                         }
                     }
                 }
-                return Err(-1);
+                Err(-1)
             }
         },
         Exp::Negative(exp) => {
             let val = eval_exp(exp, idents)?;
-            return Ok(0 - val);
+            Ok(0 - val)
         }
     }
 }
