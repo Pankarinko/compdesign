@@ -1,9 +1,9 @@
 use std::{fs::File, io::Read, process::exit};
 
 use ast::Program;
-use evaluation::execute;
+//use evaluation::execute;
 use lalrpop_util::lalrpop_mod;
-use semantics::{decl_check, return_check};
+//use semantics::{decl_check, return_check};
 use tokenizer::{Token, tokenize};
 
 lalrpop_mod!(
@@ -13,8 +13,8 @@ lalrpop_mod!(
 );
 
 pub mod ast;
-pub mod evaluation;
-pub mod semantics;
+//pub mod evaluation;
+//pub mod semantics;
 pub mod tokenizer;
 
 fn main() {
@@ -41,25 +41,28 @@ fn main() {
         exit(42);
     };
     if let Err(e) = tokenize(&input, &mut tokens) {
-        println!("Lexer failed");
+        println!("Lexer failed {e}");
+
         exit(e)
     }
+    println!("{:?}", &tokens);
     let lexer = tokens.into_iter();
 
     let ast: Program<'_>;
 
     if let Ok(result) = parser::ProgramParser::new().parse(&input, lexer) {
         ast = result;
+        println!("{:?}", ast);
     } else {
         println!("parser failed");
         exit(42)
     }
-    if !return_check(ast.get_statements()) {
+    /*if !return_check(ast.get_statements()) {
         exit(7)
     }
     if !decl_check(ast.get_statements()) {
         exit(7)
     }
     let string = args.next().unwrap().to_os_string();
-    execute(ast, string);
+    execute(ast, string);*/
 }

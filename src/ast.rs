@@ -1,18 +1,25 @@
 #[derive(Debug)]
 pub enum Statement<'a> {
-    Decl(Decl<'a>),
     Simp(Simp<'a>),
-    Return(Exp<'a>),
+    Control(Box<Control<'a>>),
+    Block(Block<'a>),
+}
+
+#[derive(Debug)]
+pub enum Type {
+    Int,
+    Bool,
 }
 
 #[derive(Debug)]
 pub enum Decl<'a> {
-    Declare(&'a [u8]),
-    Assign((&'a [u8], Exp<'a>)),
+    Declare(Type, &'a [u8]),
+    Assign((Type, &'a [u8], Exp<'a>)),
 }
 #[derive(Debug)]
 pub enum Simp<'a> {
     Simp((Lvalue<'a>, Asnop, Exp<'a>)),
+    Decl(Decl<'a>),
 }
 
 #[derive(Debug)]
@@ -29,11 +36,33 @@ impl<'a> Lvalue<'a> {
 }
 
 #[derive(Debug)]
+pub enum SimpOpt<'a> {
+    Simp(Simp<'a>),
+    NoSimp,
+}
+
+#[derive(Debug)]
+pub enum Control<'a> {
+    If(Exp<'a>, Statement<'a>),
+    Else(Statement<'a>),
+    While(Exp<'a>, Statement<'a>),
+    For((SimpOpt<'a>, Exp<'a>, SimpOpt<'a>), Statement<'a>),
+    Continue,
+    Break,
+    Return(Exp<'a>),
+}
+
+#[derive(Debug)]
 pub enum Exp<'a> {
+    True,
+    False,
     Intconst(i32),
     Ident(&'a [u8]),
     Arithmetic(Box<(Exp<'a>, Binop, Exp<'a>)>),
     Negative(Box<Exp<'a>>),
+    Not(Box<Exp<'a>>),
+    BitNot(Box<Exp<'a>>),
+    Ternary(Box<(Exp<'a>, Exp<'a>, Exp<'a>)>),
 }
 
 #[derive(Debug)]
@@ -43,6 +72,19 @@ pub enum Binop {
     Div,
     Mult,
     Mod,
+    LessThan,
+    LessEqual,
+    GreaterThan,
+    GreaterEqual,
+    Equals,
+    NotEqual,
+    And,
+    Or,
+    BitAnd,
+    BitXor,
+    BitOr,
+    LShift,
+    RShift,
 }
 #[derive(Debug)]
 pub enum Asnop {
@@ -52,17 +94,26 @@ pub enum Asnop {
     AMult,
     AMod,
     Assign,
+    ABitOr,
+    ABitAnd,
+    ABitXor,
+    ALShift,
+    ARShift,
+}
+#[derive(Debug)]
+pub enum Program<'a> {
+    Block(Block<'a>),
 }
 
 #[derive(Debug)]
-pub enum Program<'a> {
-    Prog(Vec<Statement<'a>>),
+pub enum Block<'a> {
+    Block(Vec<Statement<'a>>),
 }
 
-impl<'a> Program<'a> {
+impl<'a> Block<'a> {
     pub fn get_statements(&'a self) -> &'a Vec<Statement<'a>> {
         match self {
-            Program::Prog(statements) => &statements,
+            Block::Block(statements) => &statements,
         }
     }
 }

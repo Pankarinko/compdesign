@@ -11,6 +11,8 @@ pub enum Token<'a> {
     ParenthClose,
     BraceOpen,
     BraceClose,
+    TernaryIf,
+    TernaryThen,
     Main,
     Keyword(Keyword),
 }
@@ -28,6 +30,15 @@ pub enum ArithmeticSymbol {
     Mult,
     Div,
     Mod,
+    And,
+    Or,
+    BitAnd,
+    BitOr,
+    BitXor,
+    LShift,
+    RShift,
+    Not,
+    BitNot,
 }
 
 #[derive(Debug, Clone)]
@@ -38,6 +49,17 @@ pub enum ArithmeticSymbolEqual {
     DivEqual,
     ModEqual,
     Equal,
+    DoubleEqual,
+    LessThan,
+    GreaterThan,
+    LessEqual,
+    GreaterEqual,
+    NotEqual,
+    BitOrEqual,
+    BitAndEqual,
+    BitXorEqual,
+    LShiftEqual,
+    RShiftEqual,
 }
 
 #[derive(Debug, Clone)]
@@ -91,7 +113,6 @@ fn convert_digit(digit: &u8) -> Option<u32> {
 pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Result<i32, i32> {
     let end = input_string.len();
     let mut i = 0;
-    let mut in_main = false;
     loop {
         //println!("{:?}", tokens.last());
         if i == end {
@@ -102,6 +123,16 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
         }
         let equals = b'=';
         match input_string[i] {
+            b'?' => {
+                tokens.push(Token::TernaryIf);
+                i += 1;
+                continue;
+            }
+            b':' => {
+                tokens.push(Token::TernaryThen);
+                i += 1;
+                continue;
+            }
             b'+' => {
                 if input_string[i + 1] == equals {
                     tokens.push(Token::ArithmeticSymbolEqual(
@@ -187,9 +218,17 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
                 continue;
             }
             b'=' => {
-                tokens.push(Token::ArithmeticSymbolEqual(ArithmeticSymbolEqual::Equal));
-                i += 1;
-                continue;
+                if input_string[i + 1] == equals {
+                    tokens.push(Token::ArithmeticSymbolEqual(
+                        ArithmeticSymbolEqual::DoubleEqual,
+                    ));
+                    i += 2;
+                    continue;
+                } else {
+                    tokens.push(Token::ArithmeticSymbolEqual(ArithmeticSymbolEqual::Equal));
+                    i += 1;
+                    continue;
+                }
             }
             b'(' => {
                 tokens.push(Token::ParenthOpen);
@@ -216,6 +255,123 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
                 i += 1;
                 continue;
             }
+            b'<' => {
+                if input_string[i + 1] == equals {
+                    tokens.push(Token::ArithmeticSymbolEqual(
+                        ArithmeticSymbolEqual::LessEqual,
+                    ));
+                    i += 2;
+                    continue;
+                } else if input_string[i + 1] == b'<' {
+                    if input_string[i + 2] == equals {
+                        tokens.push(Token::ArithmeticSymbolEqual(
+                            ArithmeticSymbolEqual::LShiftEqual,
+                        ));
+                        i += 3;
+                    } else {
+                        tokens.push(Token::ArithmeticSymbol(ArithmeticSymbol::LShift));
+                        i += 2;
+                    }
+                    continue;
+                }
+
+                tokens.push(Token::ArithmeticSymbolEqual(
+                    ArithmeticSymbolEqual::LessThan,
+                ));
+                i += 1;
+                continue;
+            }
+            b'>' => {
+                if input_string[i + 1] == equals {
+                    tokens.push(Token::ArithmeticSymbolEqual(
+                        ArithmeticSymbolEqual::GreaterEqual,
+                    ));
+                    i += 2;
+                    continue;
+                } else if input_string[i + 1] == b'>' {
+                    if input_string[i + 2] == equals {
+                        tokens.push(Token::ArithmeticSymbolEqual(
+                            ArithmeticSymbolEqual::RShiftEqual,
+                        ));
+                        i += 3;
+                    } else {
+                        tokens.push(Token::ArithmeticSymbol(ArithmeticSymbol::RShift));
+                        i += 2;
+                    }
+                    continue;
+                }
+
+                tokens.push(Token::ArithmeticSymbolEqual(
+                    ArithmeticSymbolEqual::GreaterThan,
+                ));
+                i += 1;
+                continue;
+            }
+            b'!' => {
+                if input_string[i + 1] == equals {
+                    tokens.push(Token::ArithmeticSymbolEqual(
+                        ArithmeticSymbolEqual::NotEqual,
+                    ));
+                    i += 2;
+                } else {
+                    tokens.push(Token::ArithmeticSymbol(ArithmeticSymbol::Not));
+                    i += 1;
+                    continue;
+                }
+                continue;
+            }
+            b'~' => {
+                tokens.push(Token::ArithmeticSymbol(ArithmeticSymbol::BitNot));
+                i += 1;
+                continue;
+            }
+            b'&' => {
+                if input_string[i + 1] == equals {
+                    tokens.push(Token::ArithmeticSymbolEqual(
+                        ArithmeticSymbolEqual::BitAndEqual,
+                    ));
+                    i += 2;
+                    continue;
+                } else if input_string[i + 1] == b'&' {
+                    tokens.push(Token::ArithmeticSymbol(ArithmeticSymbol::And));
+                    i += 2;
+                    continue;
+                } else {
+                    tokens.push(Token::ArithmeticSymbol(ArithmeticSymbol::BitAnd));
+                    i += 1;
+                    continue;
+                }
+            }
+            b'|' => {
+                if input_string[i + 1] == equals {
+                    tokens.push(Token::ArithmeticSymbolEqual(
+                        ArithmeticSymbolEqual::BitOrEqual,
+                    ));
+                    i += 2;
+                } else if input_string[i + 1] == b'|' {
+                    tokens.push(Token::ArithmeticSymbol(ArithmeticSymbol::Or));
+                    i += 2;
+                } else {
+                    tokens.push(Token::ArithmeticSymbol(ArithmeticSymbol::BitOr));
+                    i += 1;
+                    continue;
+                }
+                continue;
+            }
+            b'^' => {
+                if input_string[i + 1] == equals {
+                    tokens.push(Token::ArithmeticSymbolEqual(
+                        ArithmeticSymbolEqual::BitXorEqual,
+                    ));
+                    i += 2;
+                } else {
+                    tokens.push(Token::ArithmeticSymbol(ArithmeticSymbol::BitXor));
+                    i += 1;
+                    continue;
+                }
+                continue;
+            }
+
             b'\n' | b'\t' | b' ' => {
                 i += 1;
                 continue;
@@ -238,15 +394,6 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
                 let word = &input_string[i..curr_end];
                 i += word.len();
                 match word {
-                    b"main" => {
-                        if in_main {
-                            tokens.push(Token::Identifier(word));
-                        } else {
-                            tokens.push(Token::Main);
-                            in_main = true;
-                        }
-                        continue;
-                    }
                     b"struct" => {
                         tokens.push(Token::Keyword(Keyword::Struct));
                         continue;

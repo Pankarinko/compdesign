@@ -1,5 +1,5 @@
 
-use crate::ast::{Program, Statement, Exp, Decl, Simp, Asnop, Lvalue, Binop};
+use crate::ast::{Program, Block, Control, Type, Statement, Exp, Decl, Simp, SimpOpt, Asnop, Lvalue, Binop};
 use crate::Token;
 use crate::tokenizer::Keyword;
 use crate::tokenizer::ArithmeticSymbolEqual;
@@ -10,6 +10,7 @@ grammar<'a>(input: &'a [u8]);
 
 extern {
     enum Token<'a> {
+        "main" => Token::Main,
         "ident" => Token::Identifier(<&'a [u8]>),
         "num" => Token::NumericValue(<i32>),
         "+" => Token::ArithmeticSymbol(ArithmeticSymbol::Plus),
@@ -17,18 +18,39 @@ extern {
         "/" => Token::ArithmeticSymbol(ArithmeticSymbol::Div),
         "-" => Token::ArithmeticSymbol(ArithmeticSymbol::Minus),
         "%" => Token::ArithmeticSymbol(ArithmeticSymbol::Mod),
+        "&&" => Token::ArithmeticSymbol(ArithmeticSymbol::And),
+        "||" => Token::ArithmeticSymbol(ArithmeticSymbol::Or),
+        "&" => Token::ArithmeticSymbol(ArithmeticSymbol::BitAnd),
+        "|" => Token::ArithmeticSymbol(ArithmeticSymbol::BitOr),
+        "^" => Token::ArithmeticSymbol(ArithmeticSymbol::BitXor),
+        "<<" => Token::ArithmeticSymbol(ArithmeticSymbol::LShift),
+        ">>" => Token::ArithmeticSymbol(ArithmeticSymbol::RShift),
+        "!" => Token::ArithmeticSymbol(ArithmeticSymbol::Not),
+        "~" => Token::ArithmeticSymbol(ArithmeticSymbol::BitNot),
         "+=" => Token::ArithmeticSymbolEqual(ArithmeticSymbolEqual::PlusEqual),
         "*=" => Token::ArithmeticSymbolEqual(ArithmeticSymbolEqual::MultEqual),
         "/=" => Token::ArithmeticSymbolEqual(ArithmeticSymbolEqual::DivEqual),
         "-=" => Token::ArithmeticSymbolEqual(ArithmeticSymbolEqual::MinusEqual),
         "%=" => Token::ArithmeticSymbolEqual(ArithmeticSymbolEqual::ModEqual),
         "=" => Token::ArithmeticSymbolEqual(ArithmeticSymbolEqual::Equal),
+        "==" => Token::ArithmeticSymbolEqual(ArithmeticSymbolEqual::DoubleEqual),
+        "<" => Token::ArithmeticSymbolEqual(ArithmeticSymbolEqual::LessThan),
+        ">" => Token::ArithmeticSymbolEqual(ArithmeticSymbolEqual::GreaterThan),
+        "<=" => Token::ArithmeticSymbolEqual(ArithmeticSymbolEqual::LessEqual),
+        ">=" => Token::ArithmeticSymbolEqual(ArithmeticSymbolEqual::GreaterEqual),
+        "!=" => Token::ArithmeticSymbolEqual(ArithmeticSymbolEqual::NotEqual),
+        "|=" => Token::ArithmeticSymbolEqual(ArithmeticSymbolEqual::BitOrEqual),
+        "&=" => Token::ArithmeticSymbolEqual(ArithmeticSymbolEqual::BitAndEqual),
+        "^=" => Token::ArithmeticSymbolEqual(ArithmeticSymbolEqual::BitXorEqual),
+        "<<=" => Token::ArithmeticSymbolEqual(ArithmeticSymbolEqual::LShiftEqual),
+        ">>=" => Token::ArithmeticSymbolEqual(ArithmeticSymbolEqual::RShiftEqual),
         ";" => Token::StatementEnd,
         "(" => Token::ParenthOpen,
         ")" => Token::ParenthClose,
         "{" => Token::BraceOpen,
         "}" => Token::BraceClose,
-        "main" => Token::Main,
+        "?" => Token::TernaryIf,
+        ":" => Token::TernaryThen,
         "struct" => Token::Keyword(Keyword::Struct),
         "if" => Token::Keyword(Keyword::If),
         "else" => Token::Keyword(Keyword::Else),
@@ -54,18 +76,39 @@ extern {
 }
 
 pub Statement: Statement<'a> = {
-    <decl:Decl> ";" => Statement::Decl(decl),
     <simp:Simp> ";" => Statement::Simp(simp),
-    "return" <exp:Exp> ";" => Statement::Return(exp),
+    <con:Control> => Statement::Control(Box::new(con)),
+    <block:Block> => Statement::Block(block),
+}
+
+pub Control: Control<'a> = {
+    #[precedence(level="0")]
+    "continue" ";" => Control::Continue,
+    "break" ";" => Control::Break,
+    "return" <e:Exp> ";" => Control::Return(e),
+    #[precedence(level="1")]  #[assoc(side="all")]
+    "if" "(" <e:Exp> ")" <s:Statement>  => Control::If(e,s),
+    "else" <s:Statement> => Control::Else(s),
+    "for" "(" <s1:Simp> ";" <e:Exp> ";" <s2:Simp> ")" <stmt:Statement> => Control::For((SimpOpt::Simp(s1), e, SimpOpt::Simp(s2)), stmt),
+    "for" "(" <s1:Simp> ";" <e:Exp> ";" ")" <stmt:Statement> => Control::For((SimpOpt::Simp(s1), e, SimpOpt::NoSimp), stmt),
+    "for" "(" ";" <e:Exp> ";" <s2:Simp> ")" <stmt:Statement> => Control::For((SimpOpt::NoSimp, e, SimpOpt::Simp(s2)), stmt),
+    "for" "(" ";" <e:Exp> ";" ")" <stmt:Statement> => Control::For((SimpOpt::NoSimp, e, SimpOpt::NoSimp), stmt),
+}
+
+pub SimpOpt: SimpOpt<'a> = {
+    <s:Simp> => SimpOpt::Simp(s),
 }
 
 pub Decl: Decl<'a> = {
-    "int" <name:"ident"> => Decl::Declare(name),
-    "int" <name:"ident"> "=" <exp:Exp> => Decl::Assign((name, exp)),
+    "int" <name:"ident"> => Decl::Declare(Type::Int, name),
+    "int" <name:"ident"> "=" <exp:Exp> => Decl::Assign((Type::Int, name, exp)),
+    "bool" <name:"ident"> => Decl::Declare(Type::Bool, name),
+    "bool" <name:"ident"> "=" <exp:Exp> => Decl::Assign((Type::Bool, name, exp)),
 }
 
 pub Simp: Simp<'a> = {
     <lvalue:Lvalue> <asnop:Asnop> <exp:Exp> => Simp::Simp((lvalue, asnop, exp)),
+    <decl:Decl> => Simp::Decl(decl),
 }
 
 pub Lvalue: Lvalue<'a> = {
@@ -80,15 +123,24 @@ pub Asnop: Asnop = {
     "*=" => Asnop::AMult,
     "%=" => Asnop::AMod,
     "=" => Asnop::Assign,
+    "|=" => Asnop::ABitOr,
+    "&=" => Asnop::ABitAnd,
+    "^=" => Asnop::ABitXor,
+    "<<=" => Asnop::ALShift,
+    ">>=" => Asnop::ARShift,
 }
 
 pub Exp: Exp<'a> = {
     #[precedence(level="0")]
+    "true" => Exp::True,
+    "false" => Exp::False,
     "(" <TopExp> ")",
     <n:"num"> => Exp::Intconst(n),
     <name:"ident"> => Exp::Ident(name),
     #[precedence(level="1")]  #[assoc(side="right")]
     "-" <e:Exp> => Exp::Negative(Box::new(e)),
+    "!" <e:Exp> => Exp::Not(Box::new(e)),
+    <e1:Exp> "?" <e2:Exp> ":" <e3:Exp> => Exp::Ternary(Box::new((e1, e2, e3))),
     #[precedence(level="2")]  #[assoc(side="left")]
     <e1:Exp> "*" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::Mult, e2))),
     <e1:Exp> "/" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::Div, e2))),
@@ -96,14 +148,39 @@ pub Exp: Exp<'a> = {
     #[precedence(level="3")] #[assoc(side="left")]
     <e1:Exp> "+" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::Plus, e2))),
     <e1:Exp> "-" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::Minus, e2))),
+        #[precedence(level="4")] #[assoc(side="left")]
+    <e1:Exp> "<<" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::LShift, e2))),
+    <e1:Exp> ">>" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::RShift, e2))),
+    #[precedence(level="5")] #[assoc(side="left")]
+    <e1:Exp> "<" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::LessThan, e2))),
+    <e1:Exp> ">" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::GreaterThan, e2))),
+    <e1:Exp> "<=" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::LessEqual, e2))),
+    <e1:Exp> ">=" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::GreaterEqual, e2))),
+    #[precedence(level="6")] #[assoc(side="left")]
+    <e1:Exp> "==" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::Equals, e2))),
+    <e1:Exp> "!=" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::NotEqual, e2))),
+        #[precedence(level="7")] #[assoc(side="left")]
+    <e1:Exp> "&" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::BitAnd, e2))),
+        #[precedence(level="8")] #[assoc(side="left")]
+    <e1:Exp> "^" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::BitXor, e2))),
+        #[precedence(level="9")] #[assoc(side="left")]
+    <e1:Exp> "|" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::BitOr, e2))),
+        #[precedence(level="10")] #[assoc(side="left")]
+    <e1:Exp> "&&" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::And, e2))),
+        #[precedence(level="11")] #[assoc(side="left")]
+    <e1:Exp> "||" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::Or, e2))),
+    
 }
 
 pub TopExp: Exp<'a> = {
     <Exp>,
 }
+pub Block: Block<'a> = {
+"{" <stmts:Statement*> "}" => Block::Block(stmts),
+}
 
 pub Program: Program<'a> = {
-    "int" "main" "(" ")" "{" <stmts:Statement*> "}"  => Program::Prog(stmts),
+    "int" <name:"ident"> "(" ")" <block:Block> => Program::Block(block),
 }
 
 
