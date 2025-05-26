@@ -1,7 +1,19 @@
 use crate::ast::{Asnop, Exp, Simp, Statement};
 
 pub fn return_check(statements: &Vec<Statement<'_>>) -> bool {
-    statements.iter().any(|s| matches!(s, Statement::Return(_)))
+    statements.iter().any(|s| match s {
+        Statement::Simp(simp) => false,
+        Statement::Control(control) => match control {
+            crate::ast::Control::If(exp, statement) => todo!(),
+            crate::ast::Control::Else(statement) => todo!(),
+            crate::ast::Control::While(exp, statement) => todo!(),
+            crate::ast::Control::For(_, statement) => todo!(),
+            crate::ast::Control::Continue => todo!(),
+            crate::ast::Control::Break => todo!(),
+            crate::ast::Control::Return(exp) => true,
+        },
+        Statement::Block(block) => todo!(),
+    })
 }
 
 fn is_contained<'a>(e: &Exp<'a>, vec: &mut Vec<&'a [u8]>) -> bool {

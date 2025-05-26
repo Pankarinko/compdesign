@@ -76,19 +76,19 @@ extern {
 }
 
 pub Statement: Statement<'a> = {
+    #[precedence(level="0")]
     <simp:Simp> ";" => Statement::Simp(simp),
-    <con:Control> => Statement::Control(Box::new(con)),
+    <con:ControlNoIf> => Statement::Control(Box::new(con)),
     <block:Block> => Statement::Block(block),
+    "if" "(" <e:Exp> ")" <s:Statement> => Statement::Control(Box::new(Control::If(e, s, None))),
+    #[precedence(level="1")]
+    "if" "(" <e:Exp> ")" <s:Statement> "else" <t:Statement> => Statement::Control(Box::new(Control::If(e, s, Some(t)))),
 }
 
-pub Control: Control<'a> = {
-    #[precedence(level="0")]
+pub ControlNoIf: Control<'a> = {
     "continue" ";" => Control::Continue,
     "break" ";" => Control::Break,
     "return" <e:Exp> ";" => Control::Return(e),
-    #[precedence(level="1")]  #[assoc(side="all")]
-    "if" "(" <e:Exp> ")" <s:Statement>  => Control::If(e,s),
-    "else" <s:Statement> => Control::Else(s),
     "for" "(" <s1:Simp> ";" <e:Exp> ";" <s2:Simp> ")" <stmt:Statement> => Control::For((SimpOpt::Simp(s1), e, SimpOpt::Simp(s2)), stmt),
     "for" "(" <s1:Simp> ";" <e:Exp> ";" ")" <stmt:Statement> => Control::For((SimpOpt::Simp(s1), e, SimpOpt::NoSimp), stmt),
     "for" "(" ";" <e:Exp> ";" <s2:Simp> ")" <stmt:Statement> => Control::For((SimpOpt::NoSimp, e, SimpOpt::Simp(s2)), stmt),

@@ -3,7 +3,7 @@ use std::{fs::File, io::Read, process::exit};
 use ast::Program;
 //use evaluation::execute;
 use lalrpop_util::lalrpop_mod;
-//use semantics::{decl_check, return_check};
+use semantics::{decl_check, return_check};
 use tokenizer::{Token, tokenize};
 
 lalrpop_mod!(
@@ -13,8 +13,9 @@ lalrpop_mod!(
 );
 
 pub mod ast;
+pub mod elaboration;
 //pub mod evaluation;
-//pub mod semantics;
+pub mod semantics;
 pub mod tokenizer;
 
 fn main() {

@@ -43,7 +43,7 @@ pub enum SimpOpt<'a> {
 
 #[derive(Debug)]
 pub enum Control<'a> {
-    If(Exp<'a>, Statement<'a>),
+    If(Exp<'a>, Statement<'a>, Option<Statement<'a>>),
     Else(Statement<'a>),
     While(Exp<'a>, Statement<'a>),
     For((SimpOpt<'a>, Exp<'a>, SimpOpt<'a>), Statement<'a>),
@@ -103,6 +103,14 @@ pub enum Asnop {
 #[derive(Debug)]
 pub enum Program<'a> {
     Block(Block<'a>),
+}
+
+impl<'a> Program<'a> {
+    pub fn get_statements(&'a self) -> &'a Vec<Statement<'a>> {
+        match self {
+            Program::Block(block) => block.get_statements(),
+        }
+    }
 }
 
 #[derive(Debug)]
