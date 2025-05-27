@@ -1,6 +1,7 @@
 use std::{fs::File, io::Read, process::exit};
 
 use ast::Program;
+use elaboration::translate_statement;
 //use elaboration::translate_statement;
 //use evaluation::execute;
 use lalrpop_util::lalrpop_mod;
@@ -14,7 +15,7 @@ lalrpop_mod!(
 );
 
 pub mod ast;
-//pub mod elaboration;
+pub mod elaboration;
 //pub mod evaluation;
 //pub mod semantics;
 pub mod tokenizer;
@@ -47,21 +48,21 @@ fn main() {
 
         exit(e)
     }
-    println!("{:?}", &tokens);
+    //println!("{:?}", &tokens);
     let lexer = tokens.into_iter();
 
     let ast: Program<'_>;
 
     if let Ok(result) = parser::ProgramParser::new().parse(&input, lexer) {
         ast = result;
-        println!("{:#?}", ast);
+        //println!("{:#?}", ast);
     } else {
         println!("parser failed");
         exit(42)
     }
-    /*let tree = translate_statement(ast.get_statements().into_iter());stmts
-    dbg!(tree);
-
+    let tree = translate_statement(&mut ast.into_statements().into_iter().peekable());
+    println!("{:?}", tree);
+    /*
     if !return_check(ast.get_statements()) {
         exit(7)
     }

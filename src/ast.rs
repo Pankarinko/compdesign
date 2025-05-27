@@ -1,28 +1,28 @@
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Statement<'a> {
     Simp(Simp<'a>),
     Control(Box<Control<'a>>),
     Block(Block<'a>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Type {
     Int,
     Bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Decl<'a> {
     Declare(Type, &'a [u8]),
     Assign((Type, &'a [u8], Exp<'a>)),
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Simp<'a> {
     Simp((Lvalue<'a>, Asnop, Exp<'a>)),
     Decl(Decl<'a>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Lvalue<'a> {
     Ident(&'a [u8]),
 }
@@ -35,7 +35,7 @@ impl<'a> Lvalue<'a> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Control<'a> {
     If(Exp<'a>, Statement<'a>, Option<Statement<'a>>),
     While(Exp<'a>, Statement<'a>),
@@ -45,7 +45,7 @@ pub enum Control<'a> {
     Return(Exp<'a>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Exp<'a> {
     True,
     False,
@@ -58,7 +58,7 @@ pub enum Exp<'a> {
     Ternary(Box<(Exp<'a>, Exp<'a>, Exp<'a>)>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Binop {
     Plus,
     Minus,
@@ -79,7 +79,7 @@ pub enum Binop {
     LShift,
     RShift,
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Asnop {
     APlus,
     AMinus,
@@ -93,28 +93,34 @@ pub enum Asnop {
     ALShift,
     ARShift,
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Program<'a> {
     Block(Block<'a>),
 }
 
 impl<'a> Program<'a> {
-    pub fn get_statements(&'a self) -> &'a Vec<Statement<'a>> {
+    pub fn get_statements(&self) -> &Vec<Statement<'a>> {
         match self {
             Program::Block(block) => block.get_statements(),
         }
     }
+
+    pub fn into_statements(self) -> Vec<Statement<'a>> {
+        match self {
+            Program::Block(Block::Block(statements)) => statements,
+        }
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Block<'a> {
     Block(Vec<Statement<'a>>),
 }
 
 impl<'a> Block<'a> {
-    pub fn get_statements(&'a self) -> &'a Vec<Statement<'a>> {
+    pub fn get_statements(&self) -> &Vec<Statement<'a>> {
         match self {
-            Block::Block(statements) => &statements,
+            Block::Block(statements) => statements,
         }
     }
 }
