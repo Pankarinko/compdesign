@@ -1,5 +1,5 @@
 
-use crate::ast::{Program, Block, Control, Type, Statement, Exp, Decl, Simp, SimpOpt, Asnop, Lvalue, Binop};
+use crate::ast::{Program, Block, Control, Type, Statement, Exp, Decl, Simp, Asnop, Lvalue, Binop};
 use crate::Token;
 use crate::tokenizer::Keyword;
 use crate::tokenizer::ArithmeticSymbolEqual;
@@ -75,28 +75,35 @@ extern {
     }
 }
 
-pub Statement: Statement<'a> = {
-    #[precedence(level="0")]
+pub StatementAtom: Statement<'a> = {
     <simp:Simp> ";" => Statement::Simp(simp),
     <con:ControlNoIf> => Statement::Control(Box::new(con)),
     <block:Block> => Statement::Block(block),
+}
+
+pub Statement: Statement<'a> = {
+    <s:DanglingStatement> => s,
+    <s:NonDanglingStatement> => s,
+}
+
+pub DanglingStatement: Statement<'a> = {
     "if" "(" <e:Exp> ")" <s:Statement> => Statement::Control(Box::new(Control::If(e, s, None))),
-    #[precedence(level="1")]
-    "if" "(" <e:Exp> ")" <s:Statement> "else" <t:Statement> => Statement::Control(Box::new(Control::If(e, s, Some(t)))),
+    "if" "(" <e:Exp> ")" <s:NonDanglingStatement> "else" <t:DanglingStatement> => Statement::Control(Box::new(Control::If(e, s, Some(t)))),
+    "for" "(" <s1:Simp?> ";" <e:Exp> ";" <s2:Simp?> ")" <stmt:DanglingStatement> => Statement::Control(Box::new(Control::For((s1, e, s2), stmt))),
+    "while" "(" <e:Exp> ")" <stmt:DanglingStatement> => Statement::Control(Box::new(Control::While(e, stmt))),
+}
+
+pub NonDanglingStatement: Statement<'a> = {
+    <a:StatementAtom> => a,
+    "if" "(" <e:Exp> ")" <s:NonDanglingStatement> "else" <t:NonDanglingStatement> => Statement::Control(Box::new(Control::If(e, s, Some(t)))),
+    "for" "(" <s1:Simp?> ";" <e:Exp> ";" <s2:Simp?> ")" <stmt:NonDanglingStatement> => Statement::Control(Box::new(Control::For((s1, e, s2), stmt))),
+    "while" "(" <e:Exp> ")" <stmt:NonDanglingStatement> => Statement::Control(Box::new(Control::While(e, stmt))),
 }
 
 pub ControlNoIf: Control<'a> = {
     "continue" ";" => Control::Continue,
     "break" ";" => Control::Break,
     "return" <e:Exp> ";" => Control::Return(e),
-    "for" "(" <s1:Simp> ";" <e:Exp> ";" <s2:Simp> ")" <stmt:Statement> => Control::For((SimpOpt::Simp(s1), e, SimpOpt::Simp(s2)), stmt),
-    "for" "(" <s1:Simp> ";" <e:Exp> ";" ")" <stmt:Statement> => Control::For((SimpOpt::Simp(s1), e, SimpOpt::NoSimp), stmt),
-    "for" "(" ";" <e:Exp> ";" <s2:Simp> ")" <stmt:Statement> => Control::For((SimpOpt::NoSimp, e, SimpOpt::Simp(s2)), stmt),
-    "for" "(" ";" <e:Exp> ";" ")" <stmt:Statement> => Control::For((SimpOpt::NoSimp, e, SimpOpt::NoSimp), stmt),
-}
-
-pub SimpOpt: SimpOpt<'a> = {
-    <s:Simp> => SimpOpt::Simp(s),
 }
 
 pub Decl: Decl<'a> = {

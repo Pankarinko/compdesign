@@ -36,17 +36,10 @@ impl<'a> Lvalue<'a> {
 }
 
 #[derive(Debug)]
-pub enum SimpOpt<'a> {
-    Simp(Simp<'a>),
-    NoSimp,
-}
-
-#[derive(Debug)]
 pub enum Control<'a> {
     If(Exp<'a>, Statement<'a>, Option<Statement<'a>>),
-    Else(Statement<'a>),
     While(Exp<'a>, Statement<'a>),
-    For((SimpOpt<'a>, Exp<'a>, SimpOpt<'a>), Statement<'a>),
+    For((Option<Simp<'a>>, Exp<'a>, Option<Simp<'a>>), Statement<'a>),
     Continue,
     Break,
     Return(Exp<'a>),
