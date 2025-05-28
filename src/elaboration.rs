@@ -83,7 +83,7 @@ pub fn translate_statement<'a>(
                 ast::Control::Return(exp) => Abs::RET(exp),
             },
             Statement::Block(block) => {
-                let mut statements = block.get_statements().into_iter().cloned().peekable();
+                let mut statements = block.get_statements().iter().cloned().peekable();
                 let mut instructions = Vec::new();
                 while statements.peek().is_some() {
                     instructions.push(translate_statement(&mut statements));

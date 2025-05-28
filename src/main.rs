@@ -1,10 +1,11 @@
-use std::{fs::File, io::Read, process::exit};
+use std::{fs::File, io::Read, iter, process::exit};
 
 use ast::Program;
 use elaboration::translate_statement;
 //use elaboration::translate_statement;
 //use evaluation::execute;
 use lalrpop_util::lalrpop_mod;
+use semantics::return_check;
 //use semantics::{decl_check, return_check};
 use tokenizer::{Token, tokenize};
 
@@ -17,7 +18,7 @@ lalrpop_mod!(
 pub mod ast;
 pub mod elaboration;
 //pub mod evaluation;
-//pub mod semantics;
+pub mod semantics;
 pub mod tokenizer;
 
 fn main() {
@@ -60,8 +61,9 @@ fn main() {
         println!("parser failed");
         exit(42)
     }
-    let tree = translate_statement(&mut ast.into_statements().into_iter().peekable());
+    let tree = translate_statement(&mut iter::once(ast.get_block()).peekable());
     println!("{:?}", tree);
+    println!("{:?}", return_check(tree));
     /*
     if !return_check(ast.get_statements()) {
         exit(7)

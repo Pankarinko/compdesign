@@ -110,6 +110,12 @@ impl<'a> Program<'a> {
             Program::Block(Block::Block(statements)) => statements,
         }
     }
+
+    pub fn get_block(self) -> Statement<'a> {
+        match self {
+            Program::Block(block) => Statement::Block(block),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

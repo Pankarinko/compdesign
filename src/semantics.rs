@@ -1,22 +1,23 @@
-use crate::ast::{Asnop, Exp, Simp, Statement};
+use crate::elaboration::Abs;
 
-pub fn return_check(statements: &Vec<Statement<'_>>) -> bool {
-    statements.iter().any(|s| match s {
-        Statement::Simp(simp) => false,
-        Statement::Control(control) => match control {
-            crate::ast::Control::If(exp, statement) => todo!(),
-            crate::ast::Control::Else(statement) => todo!(),
-            crate::ast::Control::While(exp, statement) => todo!(),
-            crate::ast::Control::For(_, statement) => todo!(),
-            crate::ast::Control::Continue => todo!(),
-            crate::ast::Control::Break => todo!(),
-            crate::ast::Control::Return(exp) => true,
-        },
-        Statement::Block(block) => todo!(),
-    })
+pub fn return_check<'a>(s: Abs<'a>) -> bool {
+    match s {
+        Abs::RET(_) => true,
+        Abs::DECL(_, _, seq) => return_check(*seq),
+        Abs::IF(_, abs1, abs2) => return_check(*abs1) && return_check(*abs2),
+        Abs::SEQ(items) => {
+            for s in items {
+                if return_check(s) {
+                    return true;
+                }
+            }
+            false
+        }
+        _ => false,
+    }
 }
 
-fn is_contained<'a>(e: &Exp<'a>, vec: &mut Vec<&'a [u8]>) -> bool {
+/*fn is_contained<'a>(e: &Exp<'a>, vec: &mut Vec<&'a [u8]>) -> bool {
     match e {
         Exp::Ident(ident) => vec.contains(ident),
         Exp::Arithmetic(exps) => is_contained(&exps.0, vec) && is_contained(&exps.2, vec),
@@ -81,4 +82,4 @@ pub fn decl_check<'a>(statements: &'a Vec<Statement<'a>>) -> bool {
         }
     }
     true
-}
+}*/
