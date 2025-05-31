@@ -5,8 +5,7 @@ use elaboration::translate_statement;
 //use elaboration::translate_statement;
 //use evaluation::execute;
 use lalrpop_util::lalrpop_mod;
-use semantics::return_check;
-//use semantics::{decl_check, return_check};
+use semantics::{decl_check, return_check};
 use tokenizer::{Token, tokenize};
 
 lalrpop_mod!(
@@ -63,7 +62,10 @@ fn main() {
     }
     let tree = translate_statement(&mut iter::once(ast.get_block()).peekable());
     println!("{:?}", tree);
-    println!("{:?}", return_check(tree));
+    //println!("{:?}", return_check(tree));
+    let mut declared = Vec::new();
+    let mut assigned = Vec::new();
+    println!("{:?}", decl_check(tree, &mut declared, &mut assigned));
     /*
     if !return_check(ast.get_statements()) {
         exit(7)
