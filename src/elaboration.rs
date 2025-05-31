@@ -1,9 +1,9 @@
-use std::iter;
+use std::{iter, process::exit};
 
 use ast::{Exp, Type};
 
 use crate::ast::{self, Asnop, Binop, Block, Lvalue, Simp, Statement};
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Abs<'a> {
     ASGN(&'a [u8], Exp<'a>),
     WHILE(Exp<'a>, Box<Abs<'a>>),
@@ -11,9 +11,10 @@ pub enum Abs<'a> {
     RET(Exp<'a>),
     DECL(&'a [u8], Type, Box<Abs<'a>>),
     IF(Exp<'a>, Box<Abs<'a>>, Box<Abs<'a>>),
-    FOR(Box<Abs<'a>>, Exp<'a>, Box<Abs<'a>>, Box<Abs<'a>>),
+    FOR(Box<Abs<'a>>),
     BRK,
     SEQ(Vec<Abs<'a>>),
+    EXP(Exp<'a>),
 }
 fn translate_simpopt<'a>(simpopt: Option<Simp<'a>>) -> Abs<'a> {
     match simpopt {
@@ -72,12 +73,41 @@ pub fn translate_statement<'a>(
                     exp,
                     Box::new(translate_statement(&mut iter::once(statement).peekable())),
                 ),
-                ast::Control::For((simp1, exp, simp2), statement) => Abs::FOR(
-                    Box::new(translate_simpopt(simp1)),
-                    exp,
-                    Box::new(translate_simpopt(simp2)),
-                    Box::new(translate_statement(&mut iter::once(statement).peekable())),
-                ),
+                ast::Control::For((simp1, exp, simp2), statement) => {
+                    let step = translate_simpopt(simp2);
+                    if matches!(step, Abs::DECL(..)) {
+                        println!(
+                            "Error: The step statememt in a for loop cannot be a declaration."
+                        );
+                        exit(7);
+                    }
+                    let exp_asb = Abs::EXP(exp);
+                    let mut simps = Abs::SEQ(vec![]);
+                    let initializer = translate_simpopt(simp1);
+                    match initializer {
+                        Abs::DECL(items, typ, scope) => {
+                            if let Abs::SEQ(vec) = *scope {
+                                let mut new_vec = vec.clone();
+                                new_vec.push(step);
+                                new_vec.push(exp_asb);
+                                new_vec.push(translate_statement(
+                                    &mut iter::once(statement).peekable(),
+                                ));
+                                simps = Abs::DECL(items, typ, Box::new(Abs::SEQ(new_vec)));
+                                print!("I am stupid");
+                            }
+                        }
+                        _ => {
+                            simps = Abs::SEQ(vec![
+                                initializer,
+                                step,
+                                exp_asb,
+                                translate_statement(&mut iter::once(statement).peekable()),
+                            ])
+                        }
+                    };
+                    Abs::FOR(Box::new(simps))
+                }
                 ast::Control::Continue => Abs::CONT,
                 ast::Control::Break => Abs::BRK,
                 ast::Control::Return(exp) => Abs::RET(exp),

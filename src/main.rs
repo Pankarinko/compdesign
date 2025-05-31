@@ -29,12 +29,12 @@ fn main() {
         Some(input_path) => match File::open(input_path) {
             Ok(f) => file = f,
             Err(_) => {
-                println!("path not found!");
+                println!("Error: Path cannot be found.");
                 exit(42);
             }
         },
         None => {
-            println!("path not found!");
+            println!("Error: Path cannot be found.");
             exit(42);
         }
     }
@@ -44,7 +44,7 @@ fn main() {
         exit(42);
     };
     if let Err(e) = tokenize(&input, &mut tokens) {
-        println!("Lexer failed {e}");
+        println!("Error: Your program contains unknown tokens.");
 
         exit(e)
     }
@@ -57,15 +57,22 @@ fn main() {
         ast = result;
         //println!("{:#?}", ast);
     } else {
-        println!("parser failed");
+        println!("Error: Your program cannot be parsed.");
         exit(42)
     }
     let tree = translate_statement(&mut iter::once(ast.get_block()).peekable());
-    println!("{:?}", tree);
-    //println!("{:?}", return_check(tree));
+    if !return_check(&tree) {
+        println!("Error: Your program does not return.");
+        exit(7)
+    }
+    //println!("{:#?}", tree);
     let mut declared = Vec::new();
     let mut assigned = Vec::new();
-    println!("{:?}", decl_check(tree, &mut declared, &mut assigned));
+    if !decl_check(&tree, &mut assigned, &mut declared) {
+        println!("Error: Your code has undeclared or unassigned variables.");
+        exit(7)
+    }
+
     /*
     if !return_check(ast.get_statements()) {
         exit(7)
