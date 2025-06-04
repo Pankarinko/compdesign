@@ -176,21 +176,21 @@ fn type_check_exp(exp: &Exp, t: &Type, variables: &HashMap<&[u8], Type>) -> Resu
             let (e1, e2, e3) = &**b;
             let cond = type_check_exp(e1, &Type::Bool, variables);
             if cond.is_ok() {
-                if let Ok(_) = type_check_exp(e2, &Type::Bool, variables) {
+                if type_check_exp(e2, &Type::Bool, variables).is_ok() {
                     if let Err(err) = type_check_exp(e3, &Type::Bool, variables) {
                         return Err(err);
                     } else {
                         return Ok(Type::Bool);
                     }
-                } else if let Ok(_) = type_check_exp(e2, &Type::Bool, variables) {
+                } else if type_check_exp(e2, &Type::Int, variables).is_ok() {
                     if let Err(err) = type_check_exp(e3, &Type::Int, variables) {
                         return Err(err);
                     } else {
-                        return Ok(Type::Bool);
+                        return Ok(Type::Int);
                     }
                 }
             }
-            return cond;
+            cond
         }
     }
 }
@@ -257,7 +257,7 @@ pub fn type_check<'a>(
             type_check(return_type, abs, variables)
         }
         Abs::IF(exp, abs1, abs2) => {
-            if let Err(_) = type_check_exp(exp, return_type, &variables) {
+            if let Err(_) = type_check_exp(exp, &Type::Bool, &variables) {
                 println!("Type Error: If condition need to evaluate to bool");
                 false
             } else {
@@ -275,7 +275,7 @@ pub fn type_check<'a>(
             true
         }
         Abs::EXP(exp) => {
-            if let Err(_) = type_check_exp(exp, &Type::Bool, &variables) {
+            if type_check_exp(exp, &Type::Bool, variables).is_err() {
                 println!("Type Error: The for loops break condition should evaluate to bool");
                 false
             } else {

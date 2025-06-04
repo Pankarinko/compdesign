@@ -147,7 +147,6 @@ pub Exp: Exp<'a> = {
     #[precedence(level="1")]  #[assoc(side="right")]
     "-" <e:Exp> => Exp::Negative(Box::new(e)),
     "!" <e:Exp> => Exp::Not(Box::new(e)),
-    <e1:Exp> "?" <e2:Exp> ":" <e3:Exp> => Exp::Ternary(Box::new((e1, e2, e3))),
     #[precedence(level="2")]  #[assoc(side="left")]
     <e1:Exp> "*" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::Mult, e2))),
     <e1:Exp> "/" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::Div, e2))),
@@ -176,7 +175,8 @@ pub Exp: Exp<'a> = {
     <e1:Exp> "&&" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::And, e2))),
         #[precedence(level="11")] #[assoc(side="left")]
     <e1:Exp> "||" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::Or, e2))),
-    
+        #[precedence(level="12")] #[assoc(side="left")]
+    <e1:Exp> "?" <e2:Exp> ":" <e3:Exp> => Exp::Ternary(Box::new((e1, e2, e3))),
 }
 
 pub TopExp: Exp<'a> = {
