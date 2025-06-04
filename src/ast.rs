@@ -5,7 +5,7 @@ pub enum Statement<'a> {
     Block(Block<'a>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Type {
     Int,
     Bool,

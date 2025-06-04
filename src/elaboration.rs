@@ -94,7 +94,6 @@ pub fn translate_statement<'a>(
                                     &mut iter::once(statement).peekable(),
                                 ));
                                 simps = Abs::DECL(items, typ, Box::new(Abs::SEQ(new_vec)));
-                                print!("I am stupid");
                             }
                         }
                         _ => {

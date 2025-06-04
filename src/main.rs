@@ -1,4 +1,4 @@
-use std::{fs::File, io::Read, iter, process::exit};
+use std::{collections::HashMap, fs::File, io::Read, iter, process::exit};
 
 use ast::Program;
 use elaboration::translate_statement;
@@ -7,6 +7,8 @@ use elaboration::translate_statement;
 use lalrpop_util::lalrpop_mod;
 use semantics::{decl_check, return_check};
 use tokenizer::{Token, tokenize};
+
+use crate::semantics::type_check;
 
 lalrpop_mod!(
     #[allow(clippy::ptr_arg)]
@@ -72,7 +74,10 @@ fn main() {
         println!("Error: Your code has undeclared or unassigned variables.");
         exit(7)
     }
-
+    let mut types = HashMap::new();
+    if !type_check(&ast::Type::Int, &tree, &mut types) {
+        exit(7);
+    }
     /*
     if !return_check(ast.get_statements()) {
         exit(7)
