@@ -491,7 +491,9 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
                         i += 1;
                         let mut temp_i = 0;
                         let mut hexval: u32 = 0;
-                        while let Some(digit) = convert_digit(&input_string[i + temp_i]) {
+                        while i + temp_i < end
+                            && let Some(digit) = convert_digit(&input_string[i + temp_i])
+                        {
                             temp_i += 1;
                             if temp_i > 8 {
                                 return Err(7);
@@ -511,7 +513,9 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
                     }
                 } else {
                     let mut decval: u32 = 0;
-                    while let Some(digit) = convert_digit(&input_string[i]) {
+                    while i < end
+                        && let Some(digit) = convert_digit(&input_string[i])
+                    {
                         if digit > 9 {
                             break;
                         }

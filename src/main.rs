@@ -8,7 +8,7 @@ use lalrpop_util::lalrpop_mod;
 use semantics::{decl_check, return_check};
 use tokenizer::{Token, tokenize};
 
-use crate::semantics::type_check;
+use crate::semantics::{break_coninue_check, type_check};
 
 lalrpop_mod!(
     #[allow(clippy::ptr_arg)]
@@ -50,11 +50,10 @@ fn main() {
 
         exit(e)
     }
-    //println!("{:?}", &tokens);
+    //println!("{:#?}", &tokens);
     let lexer = tokens.into_iter();
 
     let ast: Program<'_>;
-
     if let Ok(result) = parser::ProgramParser::new().parse(&input, lexer) {
         ast = result;
         //println!("{:#?}", ast);
@@ -63,11 +62,12 @@ fn main() {
         exit(42)
     }
     let tree = translate_statement(&mut iter::once(ast.get_block()).peekable());
+
+    //println!("{:#?}", tree);
     if !return_check(&tree) {
         println!("Error: Your program does not return.");
         exit(7)
     }
-    //println!("{:#?}", tree);
     let mut declared = Vec::new();
     let mut assigned = Vec::new();
     if !decl_check(&tree, &mut assigned, &mut declared) {
@@ -77,6 +77,11 @@ fn main() {
     let mut types = HashMap::new();
     if !type_check(&ast::Type::Int, &tree, &mut types) {
         exit(7);
+    }
+    let loop_counter = 0;
+    if !break_coninue_check(loop_counter, &tree) {
+        println!("Error: Break and continue found outside of loop.");
+        exit(7)
     }
     /*
     if !return_check(ast.get_statements()) {

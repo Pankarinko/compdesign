@@ -75,10 +75,10 @@ pub fn decl_check<'a>(
         }
         Abs::IF(exp, abs1, abs2) => {
             let return_exp = is_contained(exp, assigned);
-            let return_then = decl_check(abs1, assigned, declared);
-            let after_then = assigned.clone();
+            let mut temp_assigned = assigned.clone();
+            let return_then = decl_check(abs1, &mut temp_assigned, declared);
             let return_else = decl_check(abs2, assigned, declared);
-            assigned.retain(|x| after_then.contains(x));
+            assigned.retain(|x| temp_assigned.contains(x));
             return_exp && return_then && return_else
         }
         Abs::FOR(abs) => decl_check(abs, assigned, declared),
@@ -110,6 +110,31 @@ pub fn decl_check<'a>(
     }
 }
 
+pub fn break_coninue_check(counter: usize, abs: &Abs) -> bool {
+    match abs {
+        Abs::ASGN(..) => true,
+        Abs::WHILE(_, abs) => break_coninue_check(counter + 1, abs),
+        Abs::CONT => counter > 0,
+        Abs::RET(_) => true,
+        Abs::DECL(_, _, abs) => break_coninue_check(counter, abs),
+        Abs::IF(_, abs1, abs2) => {
+            break_coninue_check(counter, abs1) && break_coninue_check(counter, abs2)
+        }
+        Abs::FOR(abs) => break_coninue_check(counter + 1, abs),
+        Abs::BRK => counter > 0,
+        Abs::SEQ(items) => {
+            for abs in items.iter() {
+                if matches!(abs, Abs::BRK | Abs::CONT | Abs::RET(_)) {
+                    return break_coninue_check(counter, abs);
+                } else if !break_coninue_check(counter, abs) {
+                    return false;
+                }
+            }
+            true
+        }
+        Abs::EXP(..) => true,
+    }
+}
 fn type_check_exp(exp: &Exp, t: &Type, variables: &HashMap<&[u8], Type>) -> Result<Type, Type> {
     match exp {
         Exp::True => {
@@ -136,36 +161,33 @@ fn type_check_exp(exp: &Exp, t: &Type, variables: &HashMap<&[u8], Type>) -> Resu
         Exp::Ident(name) => {
             let ident_type = variables.get(name).unwrap().clone();
             if ident_type == *t {
-                return Ok(ident_type);
+                Ok(ident_type)
             } else {
-                return Err(ident_type);
+                Err(ident_type)
             }
         }
         Exp::Arithmetic(b) => {
             let (e1, binop, e2) = &**b;
             if let Some(binop_type) = type_check_arithmetic(binop) {
-                if let Err(e1_type) = type_check_exp(e1, &binop_type, variables) {
-                    return Err(e1_type);
-                }
-                if let Err(e2_type) = type_check_exp(e2, &binop_type, variables) {
-                    return Err(e2_type);
-                }
+                type_check_exp(e1, &binop_type, variables)?;
+                type_check_exp(e2, &binop_type, variables)?;
                 if binop_return_type(binop) == *t {
                     Ok(t.clone())
                 } else {
                     Err(binop_return_type(binop))
                 }
             } else {
-                if let Ok(_) = type_check_exp(e1, &Type::Bool, variables) {
-                    if let Ok(_) = type_check_exp(e2, &Type::Bool, variables) {
-                        return Ok(Type::Bool);
-                    } else {
+                if type_check_exp(e1, &Type::Bool, variables).is_ok() {
+                    if type_check_exp(e2, &Type::Bool, variables).is_err() {
                         return Err(Type::Int);
                     }
-                } else if let Ok(_) = type_check_exp(e1, &Type::Int, variables) {
-                    return Ok(Type::Bool);
-                } else {
+                } else if type_check_exp(e1, &Type::Int, variables).is_err() {
                     return Err(Type::Int);
+                }
+                if binop_return_type(binop) == *t {
+                    Ok(t.clone())
+                } else {
+                    Err(binop_return_type(binop))
                 }
             }
         }
@@ -226,7 +248,7 @@ pub fn type_check<'a>(
 ) -> bool {
     match abs {
         Abs::ASGN(name, exp) => {
-            if let Err(t) = type_check_exp(exp, variables.get(name).unwrap(), &variables) {
+            if let Err(t) = type_check_exp(exp, variables.get(name).unwrap(), variables) {
                 println!("Type Error: Wrong use of type {t:?} in expression {exp:?}");
                 false
             } else {
@@ -234,7 +256,7 @@ pub fn type_check<'a>(
             }
         }
         Abs::WHILE(exp, statements) => {
-            if type_check_exp(exp, &Type::Bool, &variables).is_err() {
+            if type_check_exp(exp, &Type::Bool, variables).is_err() {
                 println!("Type Error: While condition {exp:?} should evaluate to bool");
                 false
             } else {
@@ -243,7 +265,7 @@ pub fn type_check<'a>(
         }
         Abs::CONT => true,
         Abs::RET(exp) => {
-            if let Err(err_type) = type_check_exp(exp, return_type, &variables) {
+            if let Err(err_type) = type_check_exp(exp, return_type, variables) {
                 println!(
                     "Type Error: Function should return {return_type:?} but it currently returns {err_type:?}"
                 );
@@ -257,7 +279,7 @@ pub fn type_check<'a>(
             type_check(return_type, abs, variables)
         }
         Abs::IF(exp, abs1, abs2) => {
-            if let Err(_) = type_check_exp(exp, &Type::Bool, &variables) {
+            if type_check_exp(exp, &Type::Bool, variables).is_err() {
                 println!("Type Error: If condition need to evaluate to bool");
                 false
             } else {
