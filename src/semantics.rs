@@ -83,7 +83,16 @@ pub fn decl_check<'a>(
             assigned.retain(|x| temp_assigned.contains(x));
             return_exp && return_then && return_else
         }
-        Abs::FOR(abs) => decl_check(abs, assigned, declared),
+        Abs::FOR(abs) => {
+            if let Abs::SEQ(vec) = &**abs {
+                let mut temp_assigned = assigned.clone();
+                if matches!(vec[0], Abs::ASGN(..)) {
+                    decl_check(&vec[0], assigned, declared);
+                }
+                return decl_check(abs, &mut temp_assigned, declared);
+            }
+            decl_check(abs, assigned, declared)
+        }
         Abs::BRK => true,
         Abs::SEQ(items) => {
             if let Some(pos) = items
