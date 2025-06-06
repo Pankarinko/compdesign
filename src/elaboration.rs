@@ -88,20 +88,20 @@ pub fn translate_statement<'a>(
                         Abs::DECL(items, typ, scope) => {
                             if let Abs::SEQ(vec) = *scope {
                                 let mut new_vec = vec.clone();
-                                new_vec.push(step);
                                 new_vec.push(exp_asb);
                                 new_vec.push(translate_statement(
                                     &mut iter::once(statement).peekable(),
                                 ));
+                                new_vec.push(step);
                                 simps = Abs::DECL(items, typ, Box::new(Abs::SEQ(new_vec)));
                             }
                         }
                         _ => {
                             simps = Abs::SEQ(vec![
                                 initializer,
-                                step,
                                 exp_asb,
                                 translate_statement(&mut iter::once(statement).peekable()),
+                                step,
                             ])
                         }
                     };

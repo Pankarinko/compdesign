@@ -41,6 +41,7 @@ pub fn decl_check<'a>(
     assigned: &mut Vec<&'a [u8]>,
     declared: &mut Vec<&'a [u8]>,
 ) -> bool {
+    //println!("{:?}", abs);
     match abs {
         Abs::ASGN(name, exp) => {
             if declared.contains(name) && is_contained(exp, assigned) {
@@ -53,7 +54,8 @@ pub fn decl_check<'a>(
         }
         Abs::WHILE(exp, abs) => {
             if is_contained(exp, assigned) {
-                return decl_check(abs, assigned, declared);
+                let mut temp_assigned = assigned.clone();
+                return decl_check(abs, &mut temp_assigned, declared);
             }
             false
         }
@@ -181,8 +183,8 @@ fn type_check_exp(exp: &Exp, t: &Type, variables: &HashMap<&[u8], Type>) -> Resu
                     if type_check_exp(e2, &Type::Bool, variables).is_err() {
                         return Err(Type::Int);
                     }
-                } else if type_check_exp(e1, &Type::Int, variables).is_err() {
-                    return Err(Type::Int);
+                } else if type_check_exp(e2, &Type::Int, variables).is_err() {
+                    return Err(Type::Bool);
                 }
                 if binop_return_type(binop) == *t {
                     Ok(t.clone())
