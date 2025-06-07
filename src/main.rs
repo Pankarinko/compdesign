@@ -45,10 +45,12 @@ fn main() {
         println!("Unable to read file!");
         exit(42);
     };
-    if let Err(e) = tokenize(&input, &mut tokens) {
-        println!("Error: Your program contains unknown tokens.");
-
-        exit(e)
+    let mut semantic_error = false;
+    if let Err(e) = tokenize(&input, &mut semantic_error, &mut tokens) {
+        if e == 42 {
+            println!("Error: Your program contains unknown tokens.");
+            exit(e)
+        }
     }
     //println!("{:#?}", &tokens);
     let lexer = tokens.into_iter();
@@ -60,6 +62,12 @@ fn main() {
     } else {
         println!("Error: Your program cannot be parsed.");
         exit(42)
+    }
+
+    /*Semantic analysis starts here*/
+    if semantic_error {
+        println!("Error: Invalid integer");
+        exit(7)
     }
     let tree = translate_statement(&mut iter::once(ast.get_block()).peekable());
 
@@ -84,12 +92,6 @@ fn main() {
         exit(7)
     }
     /*
-    if !return_check(ast.get_statements()) {
-        exit(7)
-    }
-    if !decl_check(ast.get_statements()) {
-        exit(7)
-    }
     let string = args.next().unwrap().to_os_string();
     execute(ast, string);*/
 }

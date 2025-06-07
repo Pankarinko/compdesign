@@ -110,7 +110,11 @@ fn convert_digit(digit: &u8) -> Option<u32> {
     })
 }
 
-pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Result<i32, i32> {
+pub fn tokenize<'a>(
+    input_string: &'a [u8],
+    semantic_error: &mut bool,
+    tokens: &mut Vec<Token<'a>>,
+) -> Result<i32, i32> {
     let end = input_string.len();
     let mut i = 0;
     loop {
@@ -494,7 +498,7 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
                         while let Some(digit) = convert_digit(&input_string[i + temp_i]) {
                             temp_i += 1;
                             if temp_i > 8 {
-                                return Err(7);
+                                *semantic_error = true;
                             }
 
                             hexval = (hexval << 4) + digit;
@@ -524,16 +528,15 @@ pub fn tokenize<'a>(input_string: &'a [u8], tokens: &mut Vec<Token<'a>>) -> Resu
                             if let Some(new_add) = new_mul.checked_add(digit) {
                                 decval = new_add;
                                 if decval > 0x80000000 {
-                                    return Err(7);
+                                    *semantic_error = true;
                                 }
                                 if i >= end {
                                     break;
                                 }
                                 continue;
                             }
-                            return Err(7);
                         }
-                        return Err(7);
+                        *semantic_error = true;
                     }
                     tokens.push(Token::NumericValue(decval.cast_signed()));
                     continue;
