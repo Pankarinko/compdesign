@@ -2,7 +2,7 @@ use std::{iter, process::exit};
 
 use ast::{Exp, Type};
 
-use crate::ast::{self, Asnop, Binop, Block, Lvalue, Simp, Statement};
+use crate::ast::{self, Asnop, Binop, Lvalue, Simp, Statement};
 #[derive(Debug, Clone)]
 pub enum Abs<'a> {
     ASGN(&'a [u8], Exp<'a>),
