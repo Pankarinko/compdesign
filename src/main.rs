@@ -8,7 +8,10 @@ use lalrpop_util::lalrpop_mod;
 use semantics::{decl_check, return_check};
 use tokenizer::{Token, tokenize};
 
-use crate::semantics::{break_coninue_check, type_check};
+use crate::{
+    ir::{IRCmd, translate_to_ir},
+    semantics::{break_coninue_check, type_check},
+};
 
 lalrpop_mod!(
     #[allow(clippy::ptr_arg)]
@@ -92,6 +95,23 @@ fn main() {
         println!("Error: Break and continue found outside of loop.");
         exit(7)
     }
+    let mut program = Vec::new();
+    let mut temp_count: usize = 0;
+    let mut label_count: usize = 0;
+    let label_cont = 0;
+    let label_brk = 0;
+    let mut vars: HashMap<&[u8], ir::IRExp> = HashMap::new();
+    translate_to_ir(
+        tree,
+        &mut program,
+        &mut temp_count,
+        &mut label_count,
+        &mut vars,
+        label_cont,
+        label_brk,
+        None,
+    );
+    println!("{:?}", program);
     /*
     let string = args.next().unwrap().to_os_string();
     execute(ast, string);*/
