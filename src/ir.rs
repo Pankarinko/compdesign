@@ -18,7 +18,6 @@ pub enum IRExp {
 #[derive(Debug)]
 pub enum IRCmd {
     Load(IRExp, IRExp),
-    Arithmetic(usize, IRExp, Op, IRExp),
     JumpIf(IRExp, usize),
     Jump(usize),
     Label(usize),

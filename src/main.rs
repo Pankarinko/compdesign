@@ -22,6 +22,7 @@ lalrpop_mod!(
 pub mod ast;
 pub mod elaboration;
 //pub mod evaluation;
+pub mod instruction_selection;
 pub mod ir;
 pub mod semantics;
 pub mod tokenizer;
