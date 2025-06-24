@@ -46,35 +46,38 @@ fn map_temp_to_register(
     }
     let stack_i = *stack_counter * 4;
     *stack_counter += 1;
-    return format!("DWORD PTR [rbp-{}]", stack_i * 4).to_string();
+    format!("DWORD PTR [rbp-{}]", stack_i * 4).to_string()
 }
 
-/*fn translate_instruction(cmd: IRCmd, assembly: &mut String, temps: &mut HashMap<usize, String>) {
+fn translate_instruction(
+    num_temps: usize,
+    stack_counter: &mut usize,
+    cmd: IRCmd,
+    assembly: &mut String,
+) {
     match cmd {
         IRCmd::Load(irexp, irexp1) => {
-            let operand = expr_to_assembly(irexp1, assembly, temps);
+            let operand = expr_to_assembly(num_temps, stack_counter, irexp1, assembly);
             if let IRExp::Temp(i) = irexp {
-                assembly.push_str(&format!(
-                    "mov {} {}\n",
-                    temps.get(&(i + 1)).unwrap(),
-                    operand.get_op_string(&temps)
-                ));
+                let r = map_temp_to_register(num_temps, stack_counter, Some(i));
+                assembly.push_str(&format!("mov {}, {}\n", r, operand));
             }
         }
 
         IRCmd::JumpIf(irexp, label) => {
-            let operand = expr_to_assembly(irexp, assembly, temps);
-            assembly.push_str(&format!("cmp {}, 0\n", operand.get_op_string(&temps)));
+            let operand = expr_to_assembly(num_temps, stack_counter, irexp, assembly);
+            assembly.push_str(&format!("cmp {}, 0\n", operand));
             assembly.push_str(&format!("jne _LABEL_{label}\n"));
         }
         IRCmd::Jump(label) => assembly.push_str(&format!("jmp {label}",)),
         IRCmd::Label(label) => assembly.push_str(&format!("_LABEL_{label}:")),
         IRCmd::Return(irexp) => {
-            let operand = expr_to_assembly(irexp, assembly, temps);
-            assembly.push_str(&format!("mov eax, {}\n", operand.get_op_string(&temps)));
+            let operand = expr_to_assembly(num_temps, stack_counter, irexp, assembly);
+            assembly.push_str(&format!("mov eax, {}\n", operand));
+            assembly.push_str(&format!("ret\n",));
         }
     }
-}*/
+}
 
 fn expr_to_assembly(
     num_temps: usize,
