@@ -1,11 +1,7 @@
 use crate::ir::{IRCmd, IRExp};
 
 pub fn init_stack_counter(num_temps: usize) -> usize {
-    if num_temps <= 12 {
-        return 0;
-    } else {
-        return num_temps - 12;
-    }
+    num_temps.saturating_sub(12)
 }
 fn map_temp_to_register(
     num_temps: usize,
@@ -79,7 +75,7 @@ pub fn translate_instruction(
         IRCmd::Return(irexp) => {
             let operand = expr_to_assembly(num_temps, stack_counter, irexp, assembly);
             assembly.push_str(&format!("mov eax, {}\n", operand));
-            assembly.push_str(&"ret".to_string());
+            assembly.push_str("ret");
         }
     }
 }
@@ -113,7 +109,7 @@ fn expr_to_assembly(
             assembly.push_str(&format!("neg {}\n", new_r));
             new_r
         }
-        IRExp::NotBool(irexp) => todo!(),
+        IRExp::NotBool(_irexp) => todo!(),
         IRExp::NotInt(irexp) => {
             let r = expr_to_assembly(num_temps, stack_counter, *irexp, assembly);
             let new_r = map_temp_to_register(num_temps, stack_counter, None);
@@ -144,48 +140,48 @@ fn expr_to_assembly(
                 }
                 crate::ir::Op::Div => {
                     assembly.push_str(&format!("mov eax, {}\n", first_op));
-                    assembly.push_str(&format!("cdq\n"));
+                    assembly.push_str("cdq\n");
                     assembly.push_str(&format!("idiv {}\n", second_op));
                     assembly.push_str(&format!("mov {}, eax\n", new_r));
                 }
                 crate::ir::Op::Mod => {
                     assembly.push_str(&format!("movl eax, {}\n", first_op));
-                    assembly.push_str(&format!("cdq\n"));
+                    assembly.push_str("cdq\n");
                     assembly.push_str(&format!("idiv {}\n", second_op));
                     assembly.push_str(&format!("mov {}, edx\n", new_r));
                 }
                 crate::ir::Op::LessThan => {
                     assembly.push_str(&format!("comp {}, {}\n", second_op, first_op));
-                    assembly.push_str(&format!("setl al\n"));
-                    assembly.push_str(&format!("movzx eax, al\n"));
+                    assembly.push_str("setl al\n");
+                    assembly.push_str("movzx eax, al\n");
                     assembly.push_str(&format!("mov {}, eax\n", new_r));
                 }
                 crate::ir::Op::LessEqual => {
                     assembly.push_str(&format!("comp {}, {}\n", second_op, first_op));
-                    assembly.push_str(&format!("setle al\n"));
-                    assembly.push_str(&format!("movzx eax, al\n"));
+                    assembly.push_str("setle al\n");
+                    assembly.push_str("movzx eax, al\n");
                     assembly.push_str(&format!("mov {}, eax\n", new_r));
                 }
                 crate::ir::Op::GreaterThan => {
                     assembly.push_str(&format!("comp {}, {}\n", second_op, first_op));
-                    assembly.push_str(&format!("setg al\n"));
-                    assembly.push_str(&format!("movzx eax, al\n"));
+                    assembly.push_str("setg al\n");
+                    assembly.push_str("movzx eax, al\n");
                     assembly.push_str(&format!("m0v {}, eax\n", new_r));
                 }
                 crate::ir::Op::GreaterEqual => {
                     assembly.push_str(&format!("comp {}, {}\n", second_op, first_op));
-                    assembly.push_str(&format!("setge al\n"));
-                    assembly.push_str(&format!("movzx eax, al\n"));
+                    assembly.push_str("setge al\n");
+                    assembly.push_str("movzx eax, al\n");
                     assembly.push_str(&format!("mov {}, eax\n", new_r));
                 }
                 crate::ir::Op::Equals => {
-                    assembly.push_str(&format!("sete al\n"));
-                    assembly.push_str(&format!("movl eax, al\n"));
+                    assembly.push_str("sete al\n");
+                    assembly.push_str("movl eax, al\n");
                     assembly.push_str(&format!("mov {}, eax\n", new_r));
                 }
                 crate::ir::Op::NotEqual => {
-                    assembly.push_str(&format!("setne al\n"));
-                    assembly.push_str(&format!("movl eax, al\n"));
+                    assembly.push_str("setne al\n");
+                    assembly.push_str("movl eax, al\n");
                     assembly.push_str(&format!("mov {}, eax\n", new_r));
                 }
                 crate::ir::Op::BitAnd => {
@@ -206,13 +202,13 @@ fn expr_to_assembly(
                 crate::ir::Op::LShift => {
                     assembly.push_str(&format!("mov eax, {}\n", first_op));
                     assembly.push_str(&format!("mov ecx, {}\n", second_op));
-                    assembly.push_str(&format!("sall eax, cl\n"));
+                    assembly.push_str("sall eax, cl\n");
                     assembly.push_str(&format!("mov {}, eax\n", new_r));
                 }
                 crate::ir::Op::RShift => {
                     assembly.push_str(&format!("movl eax, {}\n", first_op));
                     assembly.push_str(&format!("movl ecx, {}\n", second_op));
-                    assembly.push_str(&format!("sall eax, cl\n"));
+                    assembly.push_str("sall eax, cl\n");
                     assembly.push_str(&format!("mv {}, eax\n", new_r));
                 }
             }
