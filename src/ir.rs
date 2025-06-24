@@ -13,8 +13,6 @@ pub enum IRExp {
     Exp(Box<(IRExp, Op, IRExp)>),
 }
 
-//todo hashset
-
 #[derive(Debug)]
 pub enum IRCmd {
     Load(IRExp, IRExp),
