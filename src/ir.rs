@@ -56,9 +56,10 @@ pub fn translate_to_ir<'a>(
         Abs::ASGN(ident, mut exp) => {
             let mut e = exp_to_irexp(&mut exp, temp_count, label_count, vars);
             program.append(&mut e.0);
-            if let Some(temp) = vars.insert(ident, IRExp::Temp(*temp_count)) {
-                program.push(IRCmd::Load(temp, e.1));
+            if let Some(temp) = vars.get(ident) {
+                program.push(IRCmd::Load(temp.clone(), e.1));
             } else {
+                vars.insert(ident, IRExp::Temp(*temp_count));
                 program.push(IRCmd::Load(IRExp::Temp(*temp_count), e.1));
                 *temp_count += 1;
             }

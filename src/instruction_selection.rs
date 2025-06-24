@@ -1,3 +1,5 @@
+use std::num;
+
 use crate::ir::{IRCmd, IRExp};
 
 pub fn init_stack_counter(num_temps: usize) -> usize {
@@ -11,17 +13,17 @@ fn map_temp_to_register(
     if let Some(index) = temp_index {
         if index <= 12 {
             match index {
-                1 => return "ebx".to_string(),
-                2 => return "ecx".to_string(),
-                3 => return "esi".to_string(),
-                4 => return "edi".to_string(),
-                5 => return "r8d".to_string(),
-                6 => return "r9d".to_string(),
-                7 => return "r10d".to_string(),
-                8 => return "r11d".to_string(),
-                9 => return "r12d".to_string(),
-                10 => return "r13d".to_string(),
-                11 => return "r14d".to_string(),
+                0 => return "ebx".to_string(),
+                1 => return "ecx".to_string(),
+                2 => return "esi".to_string(),
+                3 => return "edi".to_string(),
+                4 => return "r8d".to_string(),
+                5 => return "r9d".to_string(),
+                6 => return "r10d".to_string(),
+                7 => return "r11d".to_string(),
+                8 => return "r12d".to_string(),
+                9 => return "r13d".to_string(),
+                10 => return "r14d".to_string(),
                 _ => return "r15d".to_string(),
             }
         } else {
@@ -30,24 +32,26 @@ fn map_temp_to_register(
         }
     }
     if num_temps <= 12 && *stack_counter <= (12 - num_temps) {
-        match num_temps + *stack_counter {
-            1 => return "ebx".to_string(),
-            2 => return "ecx".to_string(),
-            3 => return "esi".to_string(),
-            4 => return "edi".to_string(),
-            5 => return "r8d".to_string(),
-            6 => return "r9d".to_string(),
-            7 => return "r10d".to_string(),
-            8 => return "r11d".to_string(),
-            9 => return "r12d".to_string(),
-            10 => return "r13d".to_string(),
-            11 => return "r14d".to_string(),
+        let stack_i = *stack_counter;
+        *stack_counter += 1;
+        match num_temps + stack_i {
+            0 => return "ebx".to_string(),
+            1 => return "ecx".to_string(),
+            2 => return "esi".to_string(),
+            3 => return "edi".to_string(),
+            4 => return "r8d".to_string(),
+            5 => return "r9d".to_string(),
+            6 => return "r10d".to_string(),
+            7 => return "r11d".to_string(),
+            8 => return "r12d".to_string(),
+            9 => return "r13d".to_string(),
+            10 => return "r14d".to_string(),
             _ => return "r15d".to_string(),
         }
     }
     let stack_i = *stack_counter * 4;
     *stack_counter += 1;
-    format!("DWORD PTR [rbp-{}]", stack_i * 4).to_string()
+    format!("DWORD PTR [rbp-{}]", stack_i).to_string()
 }
 
 pub fn translate_instruction(
@@ -145,7 +149,7 @@ fn expr_to_assembly(
                     assembly.push_str(&format!("mov {}, eax\n", new_r));
                 }
                 crate::ir::Op::Mod => {
-                    assembly.push_str(&format!("movl eax, {}\n", first_op));
+                    assembly.push_str(&format!("mov eax, {}\n", first_op));
                     assembly.push_str("cdq\n");
                     assembly.push_str(&format!("idiv {}\n", second_op));
                     assembly.push_str(&format!("mov {}, edx\n", new_r));
@@ -176,12 +180,12 @@ fn expr_to_assembly(
                 }
                 crate::ir::Op::Equals => {
                     assembly.push_str("sete al\n");
-                    assembly.push_str("movl eax, al\n");
+                    assembly.push_str("mov eax, al\n");
                     assembly.push_str(&format!("mov {}, eax\n", new_r));
                 }
                 crate::ir::Op::NotEqual => {
                     assembly.push_str("setne al\n");
-                    assembly.push_str("movl eax, al\n");
+                    assembly.push_str("mov eax, al\n");
                     assembly.push_str(&format!("mov {}, eax\n", new_r));
                 }
                 crate::ir::Op::BitAnd => {
@@ -206,8 +210,8 @@ fn expr_to_assembly(
                     assembly.push_str(&format!("mov {}, eax\n", new_r));
                 }
                 crate::ir::Op::RShift => {
-                    assembly.push_str(&format!("movl eax, {}\n", first_op));
-                    assembly.push_str(&format!("movl ecx, {}\n", second_op));
+                    assembly.push_str(&format!("mov eax, {}\n", first_op));
+                    assembly.push_str(&format!("mov ecx, {}\n", second_op));
                     assembly.push_str("sall eax, cl\n");
                     assembly.push_str(&format!("mv {}, eax\n", new_r));
                 }
