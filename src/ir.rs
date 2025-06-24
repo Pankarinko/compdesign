@@ -357,25 +357,3 @@ pub fn exp_to_irexp<'a>(
         }
     }
 }
-
-/*
-instructions:
-Add,
-And,
-cmp,
-Div/idiv
-Jmp,
-Mov,
-Neg,
-Nop,
-Not, logical
-Or, logical
-Sal, shift arith left
-Sar shift arith right,
-sub,
-xor,
-Push
-Pop
-
-
- */
