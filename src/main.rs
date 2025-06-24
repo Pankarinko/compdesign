@@ -9,6 +9,7 @@ use semantics::{decl_check, return_check};
 use tokenizer::{Token, tokenize};
 
 use crate::{
+    code_gen::create_binary,
     ir::{IRCmd, translate_to_ir},
     semantics::{break_coninue_check, type_check},
 };
@@ -20,8 +21,8 @@ lalrpop_mod!(
 );
 
 pub mod ast;
+pub mod code_gen;
 pub mod elaboration;
-//pub mod evaluation;
 pub mod instruction_selection;
 pub mod ir;
 pub mod semantics;
@@ -113,7 +114,6 @@ fn main() {
         None,
     );
     println!("{:?}", program);
-    /*
     let string = args.next().unwrap().to_os_string();
-    execute(ast, string);*/
+    create_binary(program, temp_count, string);
 }

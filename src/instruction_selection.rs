@@ -1,7 +1,12 @@
-use std::collections::HashMap;
+use crate::ir::{IRCmd, IRExp};
 
-use crate::ir::{IRCmd, IRExp, Op};
-
+pub fn init_stack_counter(num_temps: usize) -> usize {
+    if num_temps <= 12 {
+        return 0;
+    } else {
+        return num_temps - 12;
+    }
+}
 fn map_temp_to_register(
     num_temps: usize,
     stack_counter: &mut usize,
@@ -32,8 +37,8 @@ fn map_temp_to_register(
         match num_temps + *stack_counter {
             1 => return "ebx".to_string(),
             2 => return "ecx".to_string(),
-            3 => return "3si".to_string(),
-            4 => return "3di".to_string(),
+            3 => return "esi".to_string(),
+            4 => return "edi".to_string(),
             5 => return "r8d".to_string(),
             6 => return "r9d".to_string(),
             7 => return "r10d".to_string(),
@@ -49,7 +54,7 @@ fn map_temp_to_register(
     format!("DWORD PTR [rbp-{}]", stack_i * 4).to_string()
 }
 
-fn translate_instruction(
+pub fn translate_instruction(
     num_temps: usize,
     stack_counter: &mut usize,
     cmd: IRCmd,
@@ -74,7 +79,7 @@ fn translate_instruction(
         IRCmd::Return(irexp) => {
             let operand = expr_to_assembly(num_temps, stack_counter, irexp, assembly);
             assembly.push_str(&format!("mov eax, {}\n", operand));
-            assembly.push_str(&format!("ret\n",));
+            assembly.push_str(&"ret".to_string());
         }
     }
 }
