@@ -65,7 +65,8 @@ pub fn translate_instruction(
             let operand = expr_to_assembly(num_temps, stack_counter, irexp1, assembly);
             if let IRExp::Temp(i) = irexp {
                 let r = map_temp_to_register(num_temps, stack_counter, Some(i));
-                assembly.push_str(&format!("mov {}, {}\n", r, operand));
+                assembly.push_str(&format!("mov eax, {}\n", operand));
+                assembly.push_str(&format!("mov {}, eax\n", r));
             }
         }
 
@@ -109,21 +110,24 @@ fn expr_to_assembly(
         IRExp::Neg(irexp) => {
             let r = expr_to_assembly(num_temps, stack_counter, *irexp, assembly);
             let new_r = map_temp_to_register(num_temps, stack_counter, None);
-            assembly.push_str(&format!("mov {}, {}\n", new_r, r));
+            assembly.push_str(&format!("mov eax, {}\n", r));
+            assembly.push_str(&format!("mov {}, eax\n", new_r));
             assembly.push_str(&format!("neg {}\n", new_r));
             new_r
         }
         IRExp::NotBool(irexp) => {
             let r = expr_to_assembly(num_temps, stack_counter, *irexp, assembly);
             let new_r = map_temp_to_register(num_temps, stack_counter, None);
-            assembly.push_str(&format!("mov {}, {}\n", new_r, r));
+            assembly.push_str(&format!("mov eax, {}\n", r));
+            assembly.push_str(&format!("mov {}, eax\n", new_r));
             assembly.push_str(&format!("xor {}, 0xFF\n", new_r));
             new_r
         }
         IRExp::NotInt(irexp) => {
             let r = expr_to_assembly(num_temps, stack_counter, *irexp, assembly);
             let new_r = map_temp_to_register(num_temps, stack_counter, None);
-            assembly.push_str(&format!("mov {}, {}\n", new_r, r));
+            assembly.push_str(&format!("mov eax, {}\n", r));
+            assembly.push_str(&format!("mov {}, eax\n", new_r));
             assembly.push_str(&format!("not {}\n", new_r));
             new_r
         }
