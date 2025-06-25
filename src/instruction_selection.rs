@@ -74,12 +74,12 @@ pub fn translate_instruction(
             assembly.push_str(&format!("cmp {}, 0\n", operand));
             assembly.push_str(&format!("jne _LABEL_{label}\n"));
         }
-        IRCmd::Jump(label) => assembly.push_str(&format!("jmp {label}",)),
-        IRCmd::Label(label) => assembly.push_str(&format!("_LABEL_{label}:")),
+        IRCmd::Jump(label) => assembly.push_str(&format!("jmp {label}\n",)),
+        IRCmd::Label(label) => assembly.push_str(&format!("_LABEL_{label}:\n")),
         IRCmd::Return(irexp) => {
             let operand = expr_to_assembly(num_temps, stack_counter, irexp, assembly);
             assembly.push_str(&format!("mov eax, {}\n", operand));
-            assembly.push_str("ret");
+            assembly.push_str("ret\n");
         }
     }
 }
@@ -113,7 +113,13 @@ fn expr_to_assembly(
             assembly.push_str(&format!("neg {}\n", new_r));
             new_r
         }
-        IRExp::NotBool(_irexp) => todo!(),
+        IRExp::NotBool(irexp) => {
+            let r = expr_to_assembly(num_temps, stack_counter, *irexp, assembly);
+            let new_r = map_temp_to_register(num_temps, stack_counter, None);
+            assembly.push_str(&format!("mov {}, {}\n", new_r, r));
+            assembly.push_str(&format!("xor {}, 0xFF\n", new_r));
+            new_r
+        }
         IRExp::NotInt(irexp) => {
             let r = expr_to_assembly(num_temps, stack_counter, *irexp, assembly);
             let new_r = map_temp_to_register(num_temps, stack_counter, None);
