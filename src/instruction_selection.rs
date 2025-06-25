@@ -28,7 +28,7 @@ fn map_temp_to_register(
             }
         } else {
             let stack_i = (index - 12) * 4;
-            return format!("DWORD PTR [rbp-{}]", stack_i).to_string();
+            return format!("DWORD PTR [rsp-{}]", stack_i).to_string();
         }
     }
     if num_temps <= 12 && *stack_counter <= (12 - num_temps) {
@@ -51,7 +51,7 @@ fn map_temp_to_register(
     }
     let stack_i = *stack_counter * 4;
     *stack_counter += 1;
-    format!("DWORD PTR [rbp-{}]", stack_i).to_string()
+    format!("DWORD PTR [rsp-{}]", stack_i).to_string()
 }
 
 pub fn translate_instruction(
