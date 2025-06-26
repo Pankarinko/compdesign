@@ -83,7 +83,7 @@ pub fn translate_instruction(
             assembly.push_str(&format!("cmp {}, 0\n", operand));
             assembly.push_str(&format!("jne _LABEL_{label}\n"));
         }
-        IRCmd::Jump(label) => assembly.push_str(&format!("jmp {label}\n",)),
+        IRCmd::Jump(label) => assembly.push_str(&format!("jmp _LABEL_{label}\n",)),
         IRCmd::Label(label) => assembly.push_str(&format!("_LABEL_{label}:\n")),
         IRCmd::Return(irexp) => {
             let operand = expr_to_assembly(num_temps, stack_counter, irexp, assembly);
@@ -173,25 +173,29 @@ fn expr_to_assembly(
                     assembly.push_str(&format!("mov {}, edx\n", new_r));
                 }
                 crate::ir::Op::LessThan => {
-                    assembly.push_str(&format!("cmp {}, {}\n", second_op, first_op));
+                    assembly.push_str(&format!("mov eax, {}\n", first_op));
+                    assembly.push_str(&format!("cmp eax, {}\n", second_op));
                     assembly.push_str("setl al\n");
                     assembly.push_str("movzx eax, al\n");
                     assembly.push_str(&format!("mov {}, eax\n", new_r));
                 }
                 crate::ir::Op::LessEqual => {
-                    assembly.push_str(&format!("cmp {}, {}\n", second_op, first_op));
+                    assembly.push_str(&format!("mov eax, {}\n", first_op));
+                    assembly.push_str(&format!("cmp eax, {}\n", second_op));
                     assembly.push_str("setle al\n");
                     assembly.push_str("movzx eax, al\n");
                     assembly.push_str(&format!("mov {}, eax\n", new_r));
                 }
                 crate::ir::Op::GreaterThan => {
-                    assembly.push_str(&format!("cmp {}, {}\n", second_op, first_op));
+                    assembly.push_str(&format!("mov eax, {}\n", first_op));
+                    assembly.push_str(&format!("cmp eax, {}\n", second_op));
                     assembly.push_str("setg al\n");
                     assembly.push_str("movzx eax, al\n");
                     assembly.push_str(&format!("mov {}, eax\n", new_r));
                 }
                 crate::ir::Op::GreaterEqual => {
-                    assembly.push_str(&format!("cmp {}, {}\n", second_op, first_op));
+                    assembly.push_str(&format!("mov eax, {}\n", first_op));
+                    assembly.push_str(&format!("cmp eax, {}\n", second_op));
                     assembly.push_str("setge al\n");
                     assembly.push_str("movzx eax, al\n");
                     assembly.push_str(&format!("mov {}, eax\n", new_r));
@@ -231,7 +235,7 @@ fn expr_to_assembly(
                     assembly.push_str(&format!("mov eax, {}\n", first_op));
                     assembly.push_str(&format!("mov ecx, {}\n", second_op));
                     assembly.push_str("sall eax, cl\n");
-                    assembly.push_str(&format!("mv {}, eax\n", new_r));
+                    assembly.push_str(&format!("mov {}, eax\n", new_r));
                 }
             }
             new_r
