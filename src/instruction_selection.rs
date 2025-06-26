@@ -11,7 +11,7 @@ fn map_temp_to_register(
     temp_index: Option<usize>,
 ) -> String {
     if let Some(index) = temp_index {
-        if index <= 12 {
+        if index < 12 {
             match index {
                 0 => return "ebx".to_string(),
                 1 => return "ecx".to_string(),
@@ -27,11 +27,11 @@ fn map_temp_to_register(
                 _ => return "r15d".to_string(),
             }
         } else {
-            let stack_i = (index - 12) * 4;
+            let stack_i = (index - 11) * 4;
             return format!("DWORD PTR [rsp-{}]", stack_i).to_string();
         }
     }
-    if num_temps <= 12 && *stack_counter < (12 - num_temps) {
+    if num_temps < 12 && *stack_counter < (12 - num_temps) {
         let stack_i = *stack_counter;
         *stack_counter += 1;
         match num_temps + stack_i {
