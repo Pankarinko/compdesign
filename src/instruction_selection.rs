@@ -31,7 +31,7 @@ fn map_temp_to_register(
             return format!("DWORD PTR [rsp-{}]", stack_i).to_string();
         }
     }
-    if num_temps <= 12 && *stack_counter <= (12 - num_temps) {
+    if num_temps <= 12 && *stack_counter < (12 - num_temps) {
         let stack_i = *stack_counter;
         *stack_counter += 1;
         match num_temps + stack_i {
