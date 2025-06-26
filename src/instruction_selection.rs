@@ -31,7 +31,7 @@ fn map_temp_to_register(
             return format!("DWORD PTR [rsp-{}]", stack_i).to_string();
         }
     }
-    if num_temps < 12 && *stack_counter < (12 - num_temps) {
+    if num_temps <= 12 && *stack_counter <= (12 - num_temps) {
         let stack_i = *stack_counter;
         *stack_counter += 1;
         match num_temps + stack_i {
@@ -46,12 +46,16 @@ fn map_temp_to_register(
             8 => return "r12d".to_string(),
             9 => return "r13d".to_string(),
             10 => return "r14d".to_string(),
-            _ => return "r15d".to_string(),
+            11 => return "r15d".to_string(),
+            _ => {
+                *stack_counter += 1;
+                return "DWORD PTR [rsp-4]".to_string();
+            }
         }
     }
-    let stack_i = *stack_counter * 4;
+    let s_i = *stack_counter;
     *stack_counter += 1;
-    format!("DWORD PTR [rsp-{}]", stack_i).to_string()
+    format!("DWORD PTR [rsp-{}]", s_i * 4).to_string()
 }
 
 pub fn translate_instruction(
