@@ -11,7 +11,7 @@ fn map_temp_to_register(
     temp_index: Option<usize>,
 ) -> String {
     if let Some(index) = temp_index {
-        if index < 12 {
+        if index <= 12 {
             match index {
                 0 => return "ebx".to_string(),
                 1 => return "ecx".to_string(),
@@ -24,7 +24,11 @@ fn map_temp_to_register(
                 8 => return "r12d".to_string(),
                 9 => return "r13d".to_string(),
                 10 => return "r14d".to_string(),
-                _ => return "r15d".to_string(),
+                11 => return "r15d".to_string(),
+                _ => {
+                    *stack_counter += 1;
+                    return "DWORD PTR [rsp-4]".to_string();
+                }
             }
         } else {
             let stack_i = (index - 11) * 4;
@@ -184,7 +188,7 @@ fn expr_to_assembly(
                     assembly.push_str(&format!("cmp {}, {}\n", second_op, first_op));
                     assembly.push_str("setg al\n");
                     assembly.push_str("movzx eax, al\n");
-                    assembly.push_str(&format!("m0v {}, eax\n", new_r));
+                    assembly.push_str(&format!("mov {}, eax\n", new_r));
                 }
                 crate::ir::Op::GreaterEqual => {
                     assembly.push_str(&format!("cmp {}, {}\n", second_op, first_op));
