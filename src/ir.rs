@@ -311,45 +311,49 @@ pub fn exp_to_irexp<'a>(
                 crate::ast::Binop::And => {
                     let mut vec = Vec::new();
                     vec.append(&mut e1.0);
-                    vec.push(IRCmd::JumpIf(IRExp::NotBool(Box::new(e1.1)), *label_count));
+                    let false_label = *label_count;
+                    let done_label = *label_count + 1;
+                    *label_count += 2;
+                    vec.push(IRCmd::JumpIf(IRExp::NotBool(Box::new(e1.1)), false_label));
                     let mut e2 = exp_to_irexp(&mut b.2, temp_count, label_count, vars);
                     vec.append(&mut e2.0);
-                    vec.push(IRCmd::JumpIf(IRExp::NotBool(Box::new(e2.1)), *label_count));
+                    vec.push(IRCmd::JumpIf(IRExp::NotBool(Box::new(e2.1)), false_label));
                     vec.push(IRCmd::Load(
                         IRExp::Temp(*temp_count),
                         IRExp::ConstBool(true),
                     ));
-                    vec.push(IRCmd::Jump(*label_count + 1));
-                    vec.push(IRCmd::Label(*label_count));
+                    vec.push(IRCmd::Jump(done_label));
+                    vec.push(IRCmd::Label(false_label));
                     vec.push(IRCmd::Load(
                         IRExp::Temp(*temp_count),
                         IRExp::ConstBool(false),
                     ));
-                    vec.push(IRCmd::Label(*label_count + 1));
+                    vec.push(IRCmd::Label(done_label));
                     *temp_count += 1;
-                    *label_count += 2;
                     (vec, IRExp::Temp(*temp_count - 1))
                 }
                 crate::ast::Binop::Or => {
                     let mut vec = Vec::new();
                     vec.append(&mut e1.0);
-                    vec.push(IRCmd::JumpIf(e1.1, *label_count));
+                    let true_label = *label_count;
+                    let done_label = *label_count + 1;
+                    *label_count += 2;
+                    vec.push(IRCmd::JumpIf(e1.1, true_label));
                     let mut e2 = exp_to_irexp(&mut b.2, temp_count, label_count, vars);
                     vec.append(&mut e2.0);
-                    vec.push(IRCmd::JumpIf(e2.1, *label_count));
+                    vec.push(IRCmd::JumpIf(e2.1, true_label));
                     vec.push(IRCmd::Load(
                         IRExp::Temp(*temp_count),
                         IRExp::ConstBool(false),
                     ));
-                    vec.push(IRCmd::Jump(*label_count + 1));
-                    vec.push(IRCmd::Label(*label_count));
+                    vec.push(IRCmd::Jump(done_label));
+                    vec.push(IRCmd::Label(true_label));
                     vec.push(IRCmd::Load(
                         IRExp::Temp(*temp_count),
                         IRExp::ConstBool(true),
                     ));
-                    vec.push(IRCmd::Label(*label_count + 1));
+                    vec.push(IRCmd::Label(done_label));
                     *temp_count += 1;
-                    *label_count += 2;
                     (vec, IRExp::Temp(*temp_count - 1))
                 }
                 crate::ast::Binop::BitAnd => {
