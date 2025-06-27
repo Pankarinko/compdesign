@@ -9,46 +9,44 @@ fn map_temp_to_register(
     temp_index: Option<usize>,
 ) -> String {
     if let Some(index) = temp_index {
-        if index <= 12 {
+        if index <= 11 {
             match index {
                 0 => return "ebx".to_string(),
-                1 => return "ecx".to_string(),
-                2 => return "esi".to_string(),
-                3 => return "edi".to_string(),
-                4 => return "r8d".to_string(),
-                5 => return "r9d".to_string(),
-                6 => return "r10d".to_string(),
-                7 => return "r11d".to_string(),
-                8 => return "r12d".to_string(),
-                9 => return "r13d".to_string(),
-                10 => return "r14d".to_string(),
-                11 => return "r15d".to_string(),
+                1 => return "esi".to_string(),
+                2 => return "edi".to_string(),
+                3 => return "r8d".to_string(),
+                4 => return "r9d".to_string(),
+                5 => return "r10d".to_string(),
+                6 => return "r11d".to_string(),
+                7 => return "r12d".to_string(),
+                8 => return "r13d".to_string(),
+                9 => return "r14d".to_string(),
+                10 => return "r15d".to_string(),
                 _ => {
                     *stack_counter += 1;
                     return "DWORD PTR [rsp-4]".to_string();
                 }
             }
         } else {
-            let stack_i = (index - 11) * 4;
+            let stack_i = (index - 10) * 4;
             return format!("DWORD PTR [rsp-{}]", stack_i).to_string();
         }
     }
-    if num_temps <= 12 && *stack_counter <= (12 - num_temps) {
+    if num_temps <= 11 && *stack_counter <= (11 - num_temps) {
         let stack_i = *stack_counter;
         *stack_counter += 1;
         match num_temps + stack_i {
             0 => return "ebx".to_string(),
-            1 => return "ecx".to_string(),
-            2 => return "esi".to_string(),
-            3 => return "edi".to_string(),
-            4 => return "r8d".to_string(),
-            5 => return "r9d".to_string(),
-            6 => return "r10d".to_string(),
-            7 => return "r11d".to_string(),
-            8 => return "r12d".to_string(),
-            9 => return "r13d".to_string(),
-            10 => return "r14d".to_string(),
-            11 => return "r15d".to_string(),
+            1 => return "esi".to_string(),
+            2 => return "edi".to_string(),
+            3 => return "r8d".to_string(),
+            4 => return "r9d".to_string(),
+            5 => return "r10d".to_string(),
+            6 => return "r11d".to_string(),
+            7 => return "r12d".to_string(),
+            8 => return "r13d".to_string(),
+            9 => return "r14d".to_string(),
+            10 => return "r15d".to_string(),
             _ => {
                 *stack_counter += 1;
                 return "DWORD PTR [rsp-4]".to_string();
