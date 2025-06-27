@@ -26,7 +26,7 @@ pub fn create_binary(program: Vec<IRCmd>, num_temps: usize, string: OsString) {
     for cmd in program.into_iter() {
         translate_instruction(num_temps, &mut stack_counter, cmd, &mut program_code);
     }
-    //println!("{}", program_code);
+    println!("{}", program_code);
     let output_file = string.to_str().unwrap();
     /*let output_file = "this_file";*/
     let mut child = Command::new("gcc")
