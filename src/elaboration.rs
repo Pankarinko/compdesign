@@ -82,30 +82,35 @@ pub fn translate_statement<'a>(
                         exit(7);
                     }
                     let exp_asb = Abs::EXP(exp);
-                    let mut simps = Abs::SEQ(vec![]);
+                    let mut for_loop = Abs::SEQ(vec![]);
                     let initializer = translate_simpopt(simp1);
                     match initializer {
                         Abs::DECL(items, typ, scope) => {
                             if let Abs::SEQ(vec) = *scope {
                                 let mut new_vec = vec.clone();
                                 new_vec.push(exp_asb);
-                                new_vec.push(translate_statement(
-                                    &mut iter::once(statement).peekable(),
-                                ));
+                                if let Abs::SEQ(mut statements) =
+                                    translate_statement(&mut iter::once(statement).peekable())
+                                {
+                                    new_vec.append(&mut statements);
+                                }
                                 new_vec.push(step);
-                                simps = Abs::DECL(items, typ, Box::new(Abs::SEQ(new_vec)));
+                                for_loop = Abs::DECL(items, typ, Box::new(Abs::SEQ(new_vec)));
                             }
                         }
                         _ => {
-                            simps = Abs::SEQ(vec![
-                                initializer,
-                                exp_asb,
-                                translate_statement(&mut iter::once(statement).peekable()),
-                                step,
-                            ])
+                            let mut new_vec = vec![initializer, exp_asb];
+                            if let Abs::SEQ(mut statements) =
+                                translate_statement(&mut iter::once(statement).peekable())
+                            {
+                                new_vec.append(&mut statements);
+                            }
+
+                            new_vec.push(step);
+                            for_loop = Abs::SEQ(new_vec);
                         }
                     };
-                    Abs::FOR(Box::new(simps))
+                    Abs::FOR(Box::new(for_loop))
                 }
                 ast::Control::Continue => Abs::CONT,
                 ast::Control::Break => Abs::BRK,

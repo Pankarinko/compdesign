@@ -80,8 +80,8 @@ pub fn translate_instruction(
 
         IRCmd::JumpIf(irexp, label) => {
             let operand = expr_to_assembly(num_temps, stack_counter, irexp, assembly);
-            assembly.push_str(&format!("cmp {}, 0\n", operand));
-            assembly.push_str(&format!("jne _LABEL_{label}\n"));
+            assembly.push_str(&format!("cmp {}, 1\n", operand));
+            assembly.push_str(&format!("je _LABEL_{label}\n"));
         }
         IRCmd::Jump(label) => assembly.push_str(&format!("jmp _LABEL_{label}\n",)),
         IRCmd::Label(label) => assembly.push_str(&format!("_LABEL_{label}:\n")),
@@ -128,7 +128,7 @@ fn expr_to_assembly(
             let new_r = map_temp_to_register(num_temps, stack_counter, None);
             assembly.push_str(&format!("mov eax, {}\n", r));
             assembly.push_str(&format!("mov {}, eax\n", new_r));
-            assembly.push_str(&format!("xor {}, 0xFF\n", new_r));
+            assembly.push_str(&format!("xor {}, 1\n", new_r));
             new_r
         }
         IRExp::NotInt(irexp) => {
