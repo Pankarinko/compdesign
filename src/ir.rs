@@ -177,7 +177,6 @@ pub fn translate_to_ir<'a>(
             let label_end = *label_count + 1;
             *label_count += 2;
             program.push(IRCmd::Label(label_start));
-            println!("{:#?}", seq[0]);
             if let Abs::EXP(mut exp) = seq.remove(0) {
                 let mut e = { exp_to_irexp(&mut exp, temp_count, label_count, vars) };
                 program.append(&mut e.0);
