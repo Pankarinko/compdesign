@@ -226,13 +226,13 @@ fn expr_to_assembly(
                 crate::ir::Op::LShift => {
                     assembly.push_str(&format!("mov eax, {}\n", first_op));
                     assembly.push_str(&format!("mov ecx, {}\n", second_op));
-                    assembly.push_str("sall eax, cl\n");
+                    assembly.push_str("sal eax, cl\n");
                     assembly.push_str(&format!("mov {}, eax\n", new_r));
                 }
                 crate::ir::Op::RShift => {
                     assembly.push_str(&format!("mov eax, {}\n", first_op));
                     assembly.push_str(&format!("mov ecx, {}\n", second_op));
-                    assembly.push_str("sall eax, cl\n");
+                    assembly.push_str("sar eax, cl\n");
                     assembly.push_str(&format!("mov {}, eax\n", new_r));
                 }
             }
