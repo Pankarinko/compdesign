@@ -344,17 +344,17 @@ pub fn exp_to_irexp<'a>(
         Exp::Ternary(b) => {
             let mut e1 = exp_to_irexp(&mut b.0, temp_count, label_count, vars);
             let mut e2 = exp_to_irexp(&mut b.1, temp_count, label_count, vars);
-            let e3 = exp_to_irexp(&mut b.2, temp_count, label_count, vars);
+            let mut e3 = exp_to_irexp(&mut b.2, temp_count, label_count, vars);
             let mut vec = Vec::new();
             vec.append(&mut e1.0);
             vec.push(IRCmd::JumpIf(e1.1, *label_count));
-            vec.append(&mut e2.0);
-            vec.push(IRCmd::Load(IRExp::Temp(*temp_count), e2.1));
+            vec.append(&mut e3.0);
+            vec.push(IRCmd::Load(IRExp::Temp(*temp_count), e3.1));
             vec.push(IRCmd::Jump(*label_count + 1));
             vec.push(IRCmd::Label(*label_count));
             *label_count += 1;
             vec.append(&mut e2.0);
-            vec.push(IRCmd::Load(IRExp::Temp(*temp_count), e3.1));
+            vec.push(IRCmd::Load(IRExp::Temp(*temp_count), e2.1));
             vec.push(IRCmd::Label(*label_count));
             *label_count += 1;
             *temp_count += 1;
