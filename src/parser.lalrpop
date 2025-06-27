@@ -147,6 +147,7 @@ pub Exp: Exp<'a> = {
     #[precedence(level="1")]  #[assoc(side="right")]
     "-" <e:Exp> => Exp::Negative(Box::new(e)),
     "!" <e:Exp> => Exp::Not(Box::new(e)),
+    "~" <e:Exp> => Exp::BitNot(Box::new(e)),
     #[precedence(level="2")]  #[assoc(side="left")]
     <e1:Exp> "*" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::Mult, e2))),
     <e1:Exp> "/" <e2:Exp> => Exp::Arithmetic(Box::new((e1, Binop::Div, e2))),
