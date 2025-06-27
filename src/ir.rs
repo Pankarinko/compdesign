@@ -292,7 +292,6 @@ pub fn exp_to_irexp<'a>(
                     ));
                     vec.push(IRCmd::Jump(*label_count + 1));
                     vec.push(IRCmd::Label(*label_count));
-                    vec.push(IRCmd::Label(*label_count));
                     vec.push(IRCmd::Load(
                         IRExp::Temp(*temp_count),
                         IRExp::ConstBool(false),
@@ -307,7 +306,7 @@ pub fn exp_to_irexp<'a>(
                     vec.append(&mut e1.0);
                     vec.push(IRCmd::JumpIf(e1.1, *label_count));
                     vec.append(&mut e2.0);
-                    vec.push(IRCmd::JumpIf(IRExp::NotBool(Box::new(e2.1)), *label_count));
+                    vec.push(IRCmd::JumpIf(e2.1, *label_count));
                     vec.push(IRCmd::Load(
                         IRExp::Temp(*temp_count),
                         IRExp::ConstBool(false),

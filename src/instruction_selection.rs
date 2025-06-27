@@ -1,5 +1,3 @@
-use std::num;
-
 use crate::ir::{IRCmd, IRExp};
 
 pub fn init_stack_counter(num_temps: usize) -> usize {
@@ -202,12 +200,12 @@ fn expr_to_assembly(
                 }
                 crate::ir::Op::Equals => {
                     assembly.push_str("sete al\n");
-                    assembly.push_str("mov eax, al\n");
+                    assembly.push_str("movzx eax, al\n");
                     assembly.push_str(&format!("mov {}, eax\n", new_r));
                 }
                 crate::ir::Op::NotEqual => {
                     assembly.push_str("setne al\n");
-                    assembly.push_str("mov eax, al\n");
+                    assembly.push_str("movzx eax, al\n");
                     assembly.push_str(&format!("mov {}, eax\n", new_r));
                 }
                 crate::ir::Op::BitAnd => {

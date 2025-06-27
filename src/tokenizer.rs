@@ -118,7 +118,6 @@ pub fn tokenize<'a>(
     let end = input_string.len();
     let mut i = 0;
     loop {
-        //println!("{:?}", tokens.last());
         if i == end {
             return Ok(0);
         }

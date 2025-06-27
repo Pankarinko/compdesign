@@ -32,7 +32,7 @@ fn translate_simpopt<'a>(simpopt: Option<Simp<'a>>) -> Abs<'a> {
 }
 
 pub fn translate_statement<'a>(
-    mut stmts: &mut std::iter::Peekable<impl Iterator<Item = Statement<'a>>>,
+    stmts: &mut std::iter::Peekable<impl Iterator<Item = Statement<'a>>>,
 ) -> Abs<'a> {
     match stmts.next() {
         None => todo!(),
@@ -43,14 +43,14 @@ pub fn translate_statement<'a>(
                     ast::Decl::Declare(typ, name) => {
                         let mut vec = Vec::new();
                         while stmts.peek().is_some() {
-                            vec.push(translate_statement(&mut stmts));
+                            vec.push(translate_statement(stmts));
                         }
                         Abs::DECL(name, typ, Box::new(Abs::SEQ(vec)))
                     }
                     ast::Decl::Assign((typ, name, exp)) => {
                         let mut vec = vec![Abs::ASGN(name, exp)];
                         while stmts.peek().is_some() {
-                            vec.push(translate_statement(&mut stmts));
+                            vec.push(translate_statement(stmts));
                         }
                         Abs::DECL(name, typ, Box::new(Abs::SEQ(vec)))
                     }
