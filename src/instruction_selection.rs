@@ -197,11 +197,15 @@ fn expr_to_assembly(
                     assembly.push_str(&format!("mov {}, eax\n", new_r));
                 }
                 crate::ir::Op::Equals => {
+                    assembly.push_str(&format!("mov eax, {}\n", first_op));
+                    assembly.push_str(&format!("cmp eax, {}\n", second_op));
                     assembly.push_str("sete al\n");
                     assembly.push_str("movzx eax, al\n");
                     assembly.push_str(&format!("mov {}, eax\n", new_r));
                 }
                 crate::ir::Op::NotEqual => {
+                    assembly.push_str(&format!("mov eax, {}\n", first_op));
+                    assembly.push_str(&format!("cmp eax, {}\n", second_op));
                     assembly.push_str("setne al\n");
                     assembly.push_str("movzx eax, al\n");
                     assembly.push_str(&format!("mov {}, eax\n", new_r));
