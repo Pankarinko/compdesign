@@ -58,7 +58,7 @@ fn main() {
             exit(e)
         }
     }
-    //println!("{:#?}", &tokens);
+    println!("{:#?}", &tokens);
     let lexer = tokens.into_iter();
 
     let ast: Program<'_>;
