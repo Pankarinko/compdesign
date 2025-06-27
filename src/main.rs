@@ -113,7 +113,7 @@ fn main() {
         label_brk,
         None,
     );
-    println!("{:#?}", program);
+    //println!("{:#?}", program);
     let string = args.next().unwrap().to_os_string();
     create_binary(program, temp_count, string);
 }
