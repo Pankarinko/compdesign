@@ -41,7 +41,6 @@ pub fn decl_check<'a>(
     assigned: &mut Vec<&'a [u8]>,
     declared: &mut Vec<&'a [u8]>,
 ) -> bool {
-    //println!("{:?}", abs);
     match abs {
         Abs::ASGN(name, exp) => {
             if declared.contains(name) && is_contained(exp, assigned) {
@@ -59,8 +58,15 @@ pub fn decl_check<'a>(
             }
             false
         }
-        Abs::CONT => true,
-        Abs::RET(exp) => is_contained(exp, assigned),
+        Abs::CONT => {
+            *assigned = declared.clone();
+            true
+        }
+        Abs::RET(exp) => {
+            let res = is_contained(exp, assigned);
+            *assigned = declared.clone();
+            res
+        }
         Abs::DECL(name, _, abs) => {
             if declared.contains(name) {
                 return false;
@@ -93,29 +99,17 @@ pub fn decl_check<'a>(
             }
             decl_check(abs, assigned, declared)
         }
-        Abs::BRK => true,
+        Abs::BRK => {
+            *assigned = declared.clone();
+            true
+        }
         Abs::SEQ(items) => {
-            if let Some(pos) = items
-                .iter()
-                .rposition(|x| matches!(x, Abs::RET(..) | Abs::CONT | Abs::BRK))
-            {
-                let mut new_items = items.clone();
-                let new_scope = new_items.split_off(pos + 1);
-                for abs in new_items {
-                    if !decl_check(&abs, assigned, declared) {
-                        return false;
-                    }
+            for abs in items {
+                if !decl_check(abs, assigned, declared) {
+                    return false;
                 }
-                *assigned = declared.clone();
-                decl_check(&Abs::SEQ(new_scope), assigned, declared)
-            } else {
-                for abs in items {
-                    if !decl_check(abs, assigned, declared) {
-                        return false;
-                    }
-                }
-                true
             }
+            true
         }
         Abs::EXP(exp) => is_contained(exp, assigned),
     }
