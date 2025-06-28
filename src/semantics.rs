@@ -106,8 +106,8 @@ pub fn decl_check<'a>(
                         return false;
                     }
                 }
-                let mut new_assigned = declared.clone();
-                decl_check(&Abs::SEQ(new_scope), &mut new_assigned, declared)
+                *assigned = declared.clone();
+                decl_check(&Abs::SEQ(new_scope), assigned, declared)
             } else {
                 for abs in items {
                     if !decl_check(abs, assigned, declared) {
