@@ -1,7 +1,7 @@
 use crate::ir::{IRCmd, IRExp};
 
 pub fn init_stack_counter(num_temps: usize) -> usize {
-    num_temps.saturating_sub(12)
+    (num_temps + 1).saturating_sub(12)
 }
 fn map_temp_to_register(
     num_temps: usize,
@@ -9,7 +9,7 @@ fn map_temp_to_register(
     temp_index: Option<usize>,
 ) -> String {
     if let Some(index) = temp_index {
-        if index <= 11 {
+        if index < 11 {
             match index {
                 0 => return "ebx".to_string(),
                 1 => return "esi".to_string(),
@@ -21,18 +21,14 @@ fn map_temp_to_register(
                 7 => return "r12d".to_string(),
                 8 => return "r13d".to_string(),
                 9 => return "r14d".to_string(),
-                10 => return "r15d".to_string(),
-                _ => {
-                    *stack_counter += 1;
-                    return "DWORD PTR [rsp-4]".to_string();
-                }
+                _ => return "r14d".to_string(),
             }
         } else {
             let stack_i = (index - 10) * 4;
             return format!("DWORD PTR [rsp-{}]", stack_i).to_string();
         }
     }
-    if num_temps <= 11 && *stack_counter <= (11 - num_temps) {
+    if num_temps < 11 && *stack_counter <= (11 - num_temps) {
         let stack_i = *stack_counter;
         *stack_counter += 1;
         match num_temps + stack_i {
@@ -46,11 +42,7 @@ fn map_temp_to_register(
             7 => return "r12d".to_string(),
             8 => return "r13d".to_string(),
             9 => return "r14d".to_string(),
-            10 => return "r15d".to_string(),
-            _ => {
-                *stack_counter += 1;
-                return "DWORD PTR [rsp-4]".to_string();
-            }
+            _ => return "r15d".to_string(),
         }
     }
     let s_i = *stack_counter;
