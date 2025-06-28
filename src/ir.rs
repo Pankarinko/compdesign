@@ -56,13 +56,8 @@ pub fn translate_to_ir<'a>(
         Abs::ASGN(ident, mut exp) => {
             let mut e = exp_to_irexp(&mut exp, temp_count, label_count, vars);
             program.append(&mut e.0);
-            if let Some(temp) = vars.get(ident) {
-                program.push(IRCmd::Load(temp.clone(), e.1));
-            } else {
-                vars.insert(ident, IRExp::Temp(*temp_count));
-                program.push(IRCmd::Load(IRExp::Temp(*temp_count), e.1));
-                *temp_count += 1;
-            }
+            let temp = vars.get(ident).unwrap();
+            program.push(IRCmd::Load(temp.clone(), e.1));
         }
         Abs::WHILE(mut exp, abs) => {
             let mut e = { exp_to_irexp(&mut exp, temp_count, label_count, vars) };
@@ -105,7 +100,9 @@ pub fn translate_to_ir<'a>(
             program.append(&mut e.0);
             program.push(IRCmd::Return(e.1));
         }
-        Abs::DECL(_, _, abs) => {
+        Abs::DECL(ident, _, abs) => {
+            vars.insert(ident, IRExp::Temp(*temp_count));
+            *temp_count += 1;
             translate_to_ir(
                 *abs,
                 program,
@@ -151,27 +148,42 @@ pub fn translate_to_ir<'a>(
         Abs::FOR(b) => {
             let mut seq = Vec::new();
             match *b {
-                Abs::DECL(_, _, abs) => {
+                Abs::DECL(ident, _, abs) => {
                     if let Abs::SEQ(vec) = *abs {
                         seq = vec
                     }
+                    vars.insert(ident, IRExp::Temp(*temp_count));
+                    *temp_count += 1;
+                    if matches!(seq[0], Abs::ASGN(..)) {
+                        translate_to_ir(
+                            seq.remove(0),
+                            program,
+                            temp_count,
+                            label_count,
+                            vars,
+                            label_cont,
+                            label_brk,
+                            step,
+                        );
+                    }
                 }
                 Abs::SEQ(vec) => seq = vec,
-                _ => (),
-            }
-            if matches!(seq[0], Abs::ASGN(..)) {
-                translate_to_ir(
-                    seq.remove(0),
-                    program,
-                    temp_count,
-                    label_count,
-                    vars,
-                    label_cont,
-                    label_brk,
-                    step,
-                );
-            } else {
-                seq.remove(0);
+                _ => {
+                    if matches!(seq[0], Abs::ASGN(..)) {
+                        translate_to_ir(
+                            seq.remove(0),
+                            program,
+                            temp_count,
+                            label_count,
+                            vars,
+                            label_cont,
+                            label_brk,
+                            step,
+                        );
+                    } else {
+                        seq.remove(0);
+                    }
+                }
             }
             let label_start = *label_count;
             let label_end = *label_count + 1;
