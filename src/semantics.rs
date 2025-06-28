@@ -152,21 +152,21 @@ fn type_check_exp(exp: &Exp, t: &Type, variables: &HashMap<&[u8], Type>) -> Resu
             if *t == Type::Bool {
                 Ok(Type::Bool)
             } else {
-                Err(Type::Int)
+                Err(Type::Bool)
             }
         }
         Exp::False => {
             if *t == Type::Bool {
                 Ok(Type::Bool)
             } else {
-                Err(Type::Int)
+                Err(Type::Bool)
             }
         }
         Exp::Intconst(_) => {
             if *t == Type::Int {
                 Ok(Type::Int)
             } else {
-                Err(Type::Bool)
+                Err(Type::Int)
             }
         }
         Exp::Ident(name) => {
@@ -179,27 +179,21 @@ fn type_check_exp(exp: &Exp, t: &Type, variables: &HashMap<&[u8], Type>) -> Resu
         }
         Exp::Arithmetic(b) => {
             let (e1, binop, e2) = &**b;
+
             if let Some(binop_type) = type_check_arithmetic(binop) {
                 type_check_exp(e1, &binop_type, variables)?;
                 type_check_exp(e2, &binop_type, variables)?;
-                if binop_return_type(binop) == *t {
-                    Ok(t.clone())
-                } else {
-                    Err(binop_return_type(binop))
+            } else if type_check_exp(e1, &Type::Bool, variables).is_ok() {
+                if type_check_exp(e2, &Type::Bool, variables).is_err() {
+                    return Err(Type::Int);
                 }
+            } else if type_check_exp(e2, &Type::Int, variables).is_err() {
+                return Err(Type::Bool);
+            }
+            if binop_return_type(binop) == *t {
+                Ok(t.clone())
             } else {
-                if type_check_exp(e1, &Type::Bool, variables).is_ok() {
-                    if type_check_exp(e2, &Type::Bool, variables).is_err() {
-                        return Err(Type::Int);
-                    }
-                } else if type_check_exp(e2, &Type::Int, variables).is_err() {
-                    return Err(Type::Bool);
-                }
-                if binop_return_type(binop) == *t {
-                    Ok(t.clone())
-                } else {
-                    Err(binop_return_type(binop))
-                }
+                Err(binop_return_type(binop))
             }
         }
         Exp::Negative(exp) => type_check_exp(exp, &Type::Int, variables),
@@ -207,15 +201,13 @@ fn type_check_exp(exp: &Exp, t: &Type, variables: &HashMap<&[u8], Type>) -> Resu
         Exp::BitNot(exp) => type_check_exp(exp, &Type::Int, variables),
         Exp::Ternary(b) => {
             let (e1, e2, e3) = &**b;
-            let cond = type_check_exp(e1, &Type::Bool, variables);
-            if cond.is_ok() && type_check_exp(e2, t, variables).is_ok() {
-                if let Err(err) = type_check_exp(e3, t, variables) {
-                    return Err(err);
-                } else {
-                    return Ok(Type::Bool);
-                }
+            type_check_exp(e1, &Type::Bool, variables)?;
+            type_check_exp(e2, t, variables)?;
+            if let Err(err) = type_check_exp(e3, t, variables) {
+                Err(err)
+            } else {
+                Ok(Type::Bool)
             }
-            cond
         }
     }
 }

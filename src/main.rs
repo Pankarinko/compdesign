@@ -77,7 +77,7 @@ fn main() {
     }
     let tree = translate_statement(&mut iter::once(ast.get_block()).peekable());
 
-    //println!("{:#?}", tree);
+    //println!("{:?}", tree);
     if !return_check(&tree) {
         println!("Error: Your program does not return.");
         exit(7)
