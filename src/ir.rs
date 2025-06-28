@@ -202,8 +202,8 @@ pub fn translate_to_ir<'a>(
                     temp_count,
                     label_count,
                     vars,
-                    label_cont,
-                    label_brk,
+                    label_start,
+                    label_end,
                     seq.last(),
                 );
             }
