@@ -64,7 +64,7 @@ fn main() {
     let ast: Program<'_>;
     if let Ok(result) = parser::ProgramParser::new().parse(&input, lexer) {
         ast = result;
-        //println!("{:#?}", ast);
+        println!("{:#?}", ast);
     } else {
         println!("Error: Your program cannot be parsed.");
         exit(42)
@@ -77,7 +77,7 @@ fn main() {
     }
     let tree = translate_statement(&mut iter::once(ast.get_block()).peekable());
 
-    //println!("{:?}", tree);
+    println!("{:?}", tree);
     if !return_check(&tree) {
         println!("Error: Your program does not return.");
         exit(7)

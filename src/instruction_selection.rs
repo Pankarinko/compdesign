@@ -105,9 +105,9 @@ fn expr_to_assembly(
         IRExp::ConstBool(val) => {
             let r = map_temp_to_register(num_temps, stack_counter, None);
             if val {
-                assembly.push_str(&format!("mov {}, {}\n", r, 1));
+                assembly.push_str(&format!("mov {}, 1\n", r));
             } else {
-                assembly.push_str(&format!("mov {}, {}\n", r, 0));
+                assembly.push_str(&format!("mov {}, 0\n", r));
             }
             r
         }

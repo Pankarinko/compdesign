@@ -89,10 +89,12 @@ pub fn translate_statement<'a>(
                             if let Abs::SEQ(vec) = *scope {
                                 let mut new_vec = vec.clone();
                                 new_vec.push(exp_asb);
-                                if let Abs::SEQ(mut statements) =
-                                    translate_statement(&mut iter::once(statement).peekable())
-                                {
+                                let body =
+                                    translate_statement(&mut iter::once(statement).peekable());
+                                if let Abs::SEQ(mut statements) = body {
                                     new_vec.append(&mut statements);
+                                } else {
+                                    new_vec.push(body);
                                 }
                                 new_vec.push(step);
                                 for_loop = Abs::DECL(items, typ, Box::new(Abs::SEQ(new_vec)));
@@ -100,10 +102,11 @@ pub fn translate_statement<'a>(
                         }
                         _ => {
                             let mut new_vec = vec![initializer, exp_asb];
-                            if let Abs::SEQ(mut statements) =
-                                translate_statement(&mut iter::once(statement).peekable())
-                            {
+                            let body = translate_statement(&mut iter::once(statement).peekable());
+                            if let Abs::SEQ(mut statements) = body {
                                 new_vec.append(&mut statements);
+                            } else {
+                                new_vec.push(body);
                             }
 
                             new_vec.push(step);
