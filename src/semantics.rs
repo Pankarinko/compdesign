@@ -208,19 +208,11 @@ fn type_check_exp(exp: &Exp, t: &Type, variables: &HashMap<&[u8], Type>) -> Resu
         Exp::Ternary(b) => {
             let (e1, e2, e3) = &**b;
             let cond = type_check_exp(e1, &Type::Bool, variables);
-            if cond.is_ok() {
-                if type_check_exp(e2, &Type::Bool, variables).is_ok() {
-                    if let Err(err) = type_check_exp(e3, &Type::Bool, variables) {
-                        return Err(err);
-                    } else {
-                        return Ok(Type::Bool);
-                    }
-                } else if type_check_exp(e2, &Type::Int, variables).is_ok() {
-                    if let Err(err) = type_check_exp(e3, &Type::Int, variables) {
-                        return Err(err);
-                    } else {
-                        return Ok(Type::Int);
-                    }
+            if cond.is_ok() && type_check_exp(e2, t, variables).is_ok() {
+                if let Err(err) = type_check_exp(e3, t, variables) {
+                    return Err(err);
+                } else {
+                    return Ok(Type::Bool);
                 }
             }
             cond
