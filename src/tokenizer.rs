@@ -13,7 +13,7 @@ pub enum Token<'a> {
     BraceClose,
     TernaryIf,
     TernaryThen,
-    Main,
+    Comma,
     Keyword(Keyword),
 }
 
@@ -85,6 +85,7 @@ pub enum Keyword {
     Void,
     Char,
     String,
+    Flush,
 }
 
 /* Converts ASCII hex digits represented as u8 to the corresponding 32-bit integer */
@@ -126,6 +127,11 @@ pub fn tokenize<'a>(
         }
         let equals = b'=';
         match input_string[i] {
+            b',' => {
+                tokens.push(Token::Comma);
+                i += 1;
+                continue;
+            }
             b'?' => {
                 tokens.push(Token::TernaryIf);
                 i += 1;
@@ -479,6 +485,10 @@ pub fn tokenize<'a>(
                     }
                     b"string" => {
                         tokens.push(Token::Keyword(Keyword::String));
+                        continue;
+                    }
+                    b"flush" => {
+                        tokens.push(Token::Keyword(Keyword::Flush));
                         continue;
                     }
                     _ => {
