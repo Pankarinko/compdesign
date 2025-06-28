@@ -167,8 +167,8 @@ pub fn translate_to_ir<'a>(
                         );
                     }
                 }
-                Abs::SEQ(vec) => seq = vec,
-                _ => {
+                Abs::SEQ(vec) => {
+                    seq = vec;
                     if matches!(seq[0], Abs::ASGN(..)) {
                         translate_to_ir(
                             seq.remove(0),
@@ -184,6 +184,7 @@ pub fn translate_to_ir<'a>(
                         seq.remove(0);
                     }
                 }
+                _ => (),
             }
             let label_start = *label_count;
             let label_end = *label_count + 1;
