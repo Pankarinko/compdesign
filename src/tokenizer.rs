@@ -122,9 +122,6 @@ pub fn tokenize<'a>(
         if i == end {
             return Ok(0);
         }
-        if tokens.len() > 0x1000000 {
-            panic!("ich bin der übeltäter lol");
-        }
         let equals = b'=';
         match input_string[i] {
             b',' => {

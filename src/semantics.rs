@@ -5,7 +5,7 @@ use std::{
 };
 
 use crate::{
-    ast::{Binop, Exp, Function, Param, Program, Type},
+    ast::{ArgList, Binop, Exp, Function, Param, Program, Type},
     elaboration::{Abs, translate_statement},
 };
 
@@ -30,6 +30,10 @@ fn check_function_names(funcs: &Vec<Function>) -> bool {
         }
         if f.get_name() == b"main" {
             main = true;
+            if !f.get_params().is_empty() {
+                println!("Error: main function cannot take any arguments.");
+                return false;
+            }
         }
     }
     if !main {
@@ -40,11 +44,11 @@ fn check_function_names(funcs: &Vec<Function>) -> bool {
 }
 
 fn check_function_semantics<'a>(funcs: &Vec<Function<'a>>) -> Vec<Abs<'a>> {
-    let mut func_params = HashMap::new();
     let mut abs_funcs = Vec::new();
-    let _ = funcs
+    let func_params = funcs
         .iter()
-        .map(|f| func_params.insert(f.get_name(), (f.get_params(), f.get_type())));
+        .map(|f| (f.get_name(), (f.get_params(), f.get_type())))
+        .collect();
     for f in funcs.iter() {
         let mut declared: Vec<&'a [u8]> = f.get_params().iter().map(|p| p.get_name()).collect();
         let mut assigned = declared.clone();
@@ -70,12 +74,11 @@ fn check_function_semantics<'a>(funcs: &Vec<Function<'a>>) -> Vec<Abs<'a>> {
             );
             exit(7)
         }
-        let mut variables = HashMap::new();
-        let _ = f
+        let mut variables = f
             .get_params()
             .iter()
-            .map(|p| variables.insert(p.get_name(), p.get_type().clone()));
-        println!("{:?}", f.get_params());
+            .map(|p| (p.get_name(), p.get_type().clone()))
+            .collect();
         if !type_check(f.get_type(), &stmts, &func_params, &mut variables) {
             exit(7);
         }
@@ -300,7 +303,6 @@ fn type_check_exp<'a>(
             }
         }
         Exp::Ident(name) => {
-            println!("{:?}", name);
             let ident_type = variables.get(name).unwrap().clone();
             if ident_type == *t {
                 Ok(ident_type)
@@ -341,12 +343,31 @@ fn type_check_exp<'a>(
             }
         }
         Exp::Call(call) => match call {
-            crate::ast::Call::Print(arg_list) => todo!(),
-            crate::ast::Call::Read(arg_list) => todo!(),
-            crate::ast::Call::Flush(arg_list) => todo!(),
+            crate::ast::Call::Print(arg_list) => {
+                let args = arg_list.clone().into_args();
+                if args.len() == 1 {
+                    if type_check_exp(&args[1], &Type::Int, func_params, variables).is_err() {
+                        return Err(Type::Bool);
+                    } else {
+                        return Ok(Type::Int);
+                    }
+                }
+                println!(
+                    "Error: \"print\" function takes 1 argument but {} were provided.",
+                    args.len()
+                );
+                exit(7);
+            }
             crate::ast::Call::Func(name, arg_list) => {
                 if let Some(data) = func_params.get(name) {
-                    if data.1 == t {
+                    if data.1 == t
+                        && arg_type_check(
+                            name,
+                            func_params,
+                            arg_list.clone().into_args(),
+                            variables,
+                        )
+                    {
                         return Ok(data.1.clone());
                     } else {
                         return Err(data.1.clone());
@@ -355,6 +376,28 @@ fn type_check_exp<'a>(
                 println!(
                     "Error: No function with name \"{}\" found.",
                     str::from_utf8(name).unwrap()
+                );
+                exit(7);
+            }
+            crate::ast::Call::Read(arg_list) => {
+                let args = arg_list.clone().into_args();
+                if args.is_empty() {
+                    return Ok(Type::Int);
+                }
+                println!(
+                    "Error: \"read\" function takes zero arguments but {} were provided.",
+                    args.len()
+                );
+                exit(7);
+            }
+            crate::ast::Call::Flush(arg_list) => {
+                let args = arg_list.clone().into_args();
+                if args.is_empty() {
+                    return Ok(Type::Int);
+                }
+                println!(
+                    "Error: \"flush\" function takes zero arguments but {} were provided.",
+                    args.len()
                 );
                 exit(7);
             }

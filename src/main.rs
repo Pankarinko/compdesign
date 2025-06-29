@@ -8,6 +8,8 @@ use lalrpop_util::lalrpop_mod;
 //use semantics::{decl_check, return_check};
 use tokenizer::{Token, tokenize};
 
+use crate::semantics::check_semantics;
+
 /*use crate::{
     code_gen::create_binary,
     ir::{IRCmd, translate_to_ir},
@@ -69,15 +71,16 @@ fn main() {
         println!("Error: Your program cannot be parsed.");
         exit(42)
     }
-    /*
+
     /*Semantic analysis starts here*/
     if semantic_error {
         println!("Error: Invalid integer");
         exit(7)
     }
-    let tree = translate_statement(&mut iter::once(ast.get_block()).peekable());
+    let tree = check_semantics(ast);
 
     //println!("{:?}", tree);
+    /*
     if !return_check(&tree) {
         println!("Error: Your program does not return.");
         exit(7)
