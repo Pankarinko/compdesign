@@ -21,13 +21,19 @@ fn check_function_names(funcs: &Vec<Function>) -> bool {
     let mut names = HashSet::new();
     let mut main = false;
     for f in funcs.iter() {
-        if !names.insert(f.get_name()) {
+        let f_name = f.get_name();
+        if f_name == b"print" || f_name == b"read" || f_name == b"flush" {
+            println!("Error: built-in functions cannot be redefined.");
+            return false;
+        }
+        if !names.insert(f_name) {
             println!(
                 "Error: Function \"{}\" is declared more than once.",
-                str::from_utf8(f.get_name()).unwrap()
+                str::from_utf8(f_name).unwrap()
             );
             return false;
         }
+
         if f.get_name() == b"main" {
             main = true;
             if !f.get_params().is_empty() {
@@ -55,7 +61,6 @@ fn check_function_semantics<'a>(funcs: &Vec<Function<'a>>) -> Vec<(&'a [u8], Abs
         let stmts = translate_statement(
             &mut iter::once(Statement::Block(f.clone().get_block())).peekable(),
         );
-        println!("{:?}", stmts);
         if !return_check(&stmts) {
             println!(
                 "Error: Function \"{}\" does not return.",
@@ -127,7 +132,6 @@ fn arg_type_check<'a>(
 }
 
 fn return_check<'a>(s: &Abs<'a>) -> bool {
-    println!("{:?}", s);
     match s {
         Abs::RET(_) => true,
         Abs::DECL(_, _, seq) => return_check(seq),
@@ -493,6 +497,14 @@ fn type_check<'a>(
                 true
             }
         }
-        Abs::CALL(name, args) => arg_type_check(name, func_params, args.clone(), variables),
+        Abs::CALL(name, args) => match *name {
+            b"print" => {
+                args.len() == 1
+                    && type_check_exp(&args[0], &Type::Int, func_params, variables).is_ok()
+            }
+            b"read" => args.is_empty(),
+            b"flush" => args.is_empty(),
+            _ => arg_type_check(name, func_params, args.clone(), variables),
+        },
     }
 }
