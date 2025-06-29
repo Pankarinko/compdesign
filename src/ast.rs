@@ -120,15 +120,21 @@ impl<'a> Function<'a> {
         }
     }
 
-    pub fn get_statements(&self) -> &Vec<Statement<'a>> {
+    pub fn get_block(self) -> Block<'a> {
         match self {
-            Function::Function(_, _, _, Block::Block(stmts)) => stmts,
+            Function::Function(_, _, _, block) => block,
         }
     }
 
     pub fn get_name(&self) -> &'a [u8] {
         match self {
             Function::Function(_, name, _, _) => name,
+        }
+    }
+
+    pub fn get_type(&self) -> &Type {
+        match self {
+            Function::Function(t, _, _, _) => t,
         }
     }
 }
@@ -143,9 +149,31 @@ pub enum Param<'a> {
     Param(Type, &'a [u8]),
 }
 
+impl<'a> Param<'a> {
+    pub fn get_name(&self) -> &'a [u8] {
+        match self {
+            Param::Param(_, name) => name,
+        }
+    }
+
+    pub fn get_type(&self) -> &Type {
+        match self {
+            Param::Param(t, _) => t,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum Block<'a> {
     Block(Vec<Statement<'a>>),
+}
+
+impl<'a> Block<'a> {
+    pub fn into_statements(self) -> Vec<Statement<'a>> {
+        match self {
+            Block::Block(statements) => statements,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -159,4 +187,12 @@ pub enum Call<'a> {
 #[derive(Debug, Clone)]
 pub enum ArgList<'a> {
     Args(Vec<Exp<'a>>),
+}
+
+impl<'a> ArgList<'a> {
+    pub fn into_args(self) -> Vec<Exp<'a>> {
+        match self {
+            ArgList::Args(args) => args,
+        }
+    }
 }

@@ -1,17 +1,29 @@
-use std::collections::{HashMap, HashSet};
-
-use crate::{
-    ast::{Binop, Exp, Function, Type},
-    elaboration::Abs,
+use std::{
+    collections::{HashMap, HashSet},
+    iter,
+    process::exit,
 };
 
-pub fn check_function_names(funcs: &Vec<Function>) -> bool {
+use crate::{
+    ast::{Binop, Exp, Function, Param, Program, Type},
+    elaboration::{Abs, translate_statement},
+};
+
+pub fn check_semantics<'a>(program: Program<'a>) -> Vec<Abs<'a>> {
+    let funcs = program.into_functions();
+    if !check_function_names(funcs) {
+        exit(7);
+    }
+    check_function_semantics(funcs)
+}
+
+fn check_function_names(funcs: &Vec<Function>) -> bool {
     let mut names = HashSet::new();
     let mut main = false;
     for f in funcs.iter() {
         if !names.insert(f.get_name()) {
             println!(
-                "Error: the function \"{}\" is declared more than once.",
+                "Error: Function \"{}\" is declared more than once.",
                 str::from_utf8(f.get_name()).unwrap()
             );
             return false;
@@ -27,7 +39,95 @@ pub fn check_function_names(funcs: &Vec<Function>) -> bool {
     true
 }
 
-pub fn return_check<'a>(s: &Abs<'a>) -> bool {
+fn check_function_semantics<'a>(funcs: &Vec<Function<'a>>) -> Vec<Abs<'a>> {
+    let mut func_params = HashMap::new();
+    let mut abs_funcs = Vec::new();
+    let _ = funcs
+        .iter()
+        .map(|f| func_params.insert(f.get_name(), (f.get_params(), f.get_type())));
+    for f in funcs.iter() {
+        let mut declared: Vec<&'a [u8]> = f.get_params().iter().map(|p| p.get_name()).collect();
+        let mut assigned = declared.clone();
+        let stmts = translate_statement(
+            &mut f
+                .clone()
+                .get_block()
+                .into_statements()
+                .into_iter()
+                .peekable(),
+        );
+        if !return_check(&stmts) {
+            println!(
+                "Error: Function \"{}\" does not return.",
+                str::from_utf8(f.get_name()).unwrap()
+            );
+            exit(7)
+        }
+        if !decl_check(&stmts, &mut assigned, &mut declared) {
+            println!(
+                "Error: Function \"{}\" has undeclared or unassigned variables.",
+                str::from_utf8(f.get_name()).unwrap()
+            );
+            exit(7)
+        }
+        let mut variables = HashMap::new();
+        let _ = f
+            .get_params()
+            .iter()
+            .map(|p| variables.insert(p.get_name(), p.get_type().clone()));
+        println!("{:?}", f.get_params());
+        if !type_check(f.get_type(), &stmts, &func_params, &mut variables) {
+            exit(7);
+        }
+        let loop_counter = 0;
+        if !break_coninue_check(loop_counter, &stmts) {
+            println!("Error: Break and continue found outside of loop.");
+            exit(7)
+        }
+        abs_funcs.push(stmts);
+    }
+    abs_funcs
+}
+
+fn arg_type_check<'a>(
+    f_name: &'a [u8],
+    func_params: &HashMap<&'a [u8], (&Vec<Param<'a>>, &Type)>,
+    args: Vec<Exp<'a>>,
+    variables: &HashMap<&[u8], Type>,
+) -> bool {
+    if let Some(f_args) = func_params.get(f_name) {
+        if f_args.0.len() == args.len() {
+            let res = f_args.0.iter().enumerate().any(|(i, param)| {
+                type_check_exp(&args[i], param.get_type(), func_params, variables).is_err()
+            });
+            if res {
+                println!(
+                    "Error: Function \"{}\" was called with parameters of the wrong type.",
+                    str::from_utf8(f_name).unwrap(),
+                );
+                false
+            } else {
+                true
+            }
+        } else {
+            println!(
+                "Error: Function \"{}\" takes {} arguments, but {} were provided.",
+                str::from_utf8(f_name).unwrap(),
+                f_args.0.len(),
+                args.len(),
+            );
+            false
+        }
+    } else {
+        println!(
+            "Error: No function with name \"{}\" found.",
+            str::from_utf8(f_name).unwrap()
+        );
+        false
+    }
+}
+
+fn return_check<'a>(s: &Abs<'a>) -> bool {
     match s {
         Abs::RET(_) => true,
         Abs::DECL(_, _, seq) => return_check(seq),
@@ -58,7 +158,7 @@ fn is_contained<'a>(e: &Exp<'a>, vec: &mut Vec<&'a [u8]>) -> bool {
     }
 }
 
-pub fn decl_check<'a>(
+fn decl_check<'a>(
     abs: &Abs<'a>,
     assigned: &mut Vec<&'a [u8]>,
     declared: &mut Vec<&'a [u8]>,
@@ -134,10 +234,18 @@ pub fn decl_check<'a>(
             true
         }
         Abs::EXP(exp) => is_contained(exp, assigned),
+        Abs::CALL(_, exps) => {
+            for abs in exps {
+                if !is_contained(abs, assigned) {
+                    return false;
+                }
+            }
+            true
+        }
     }
 }
 
-pub fn break_coninue_check(counter: usize, abs: &Abs) -> bool {
+fn break_coninue_check(counter: usize, abs: &Abs) -> bool {
     match abs {
         Abs::ASGN(..) => true,
         Abs::WHILE(_, abs) => break_coninue_check(counter + 1, abs),
@@ -160,9 +268,15 @@ pub fn break_coninue_check(counter: usize, abs: &Abs) -> bool {
             true
         }
         Abs::EXP(..) => true,
+        Abs::CALL(_items, _exps) => true,
     }
 }
-fn type_check_exp(exp: &Exp, t: &Type, variables: &HashMap<&[u8], Type>) -> Result<Type, Type> {
+fn type_check_exp<'a>(
+    exp: &Exp,
+    t: &Type,
+    func_params: &HashMap<&'a [u8], (&Vec<Param<'a>>, &Type)>,
+    variables: &HashMap<&[u8], Type>,
+) -> Result<Type, Type> {
     match exp {
         Exp::True => {
             if *t == Type::Bool {
@@ -186,6 +300,7 @@ fn type_check_exp(exp: &Exp, t: &Type, variables: &HashMap<&[u8], Type>) -> Resu
             }
         }
         Exp::Ident(name) => {
+            println!("{:?}", name);
             let ident_type = variables.get(name).unwrap().clone();
             if ident_type == *t {
                 Ok(ident_type)
@@ -197,13 +312,13 @@ fn type_check_exp(exp: &Exp, t: &Type, variables: &HashMap<&[u8], Type>) -> Resu
             let (e1, binop, e2) = &**b;
 
             if let Some(binop_type) = type_check_arithmetic(binop) {
-                type_check_exp(e1, &binop_type, variables)?;
-                type_check_exp(e2, &binop_type, variables)?;
-            } else if type_check_exp(e1, &Type::Bool, variables).is_ok() {
-                if type_check_exp(e2, &Type::Bool, variables).is_err() {
+                type_check_exp(e1, &binop_type, func_params, variables)?;
+                type_check_exp(e2, &binop_type, func_params, variables)?;
+            } else if type_check_exp(e1, &Type::Bool, func_params, variables).is_ok() {
+                if type_check_exp(e2, &Type::Bool, func_params, variables).is_err() {
                     return Err(Type::Int);
                 }
-            } else if type_check_exp(e2, &Type::Int, variables).is_err() {
+            } else if type_check_exp(e2, &Type::Int, func_params, variables).is_err() {
                 return Err(Type::Bool);
             }
             if binop_return_type(binop) == *t {
@@ -212,19 +327,38 @@ fn type_check_exp(exp: &Exp, t: &Type, variables: &HashMap<&[u8], Type>) -> Resu
                 Err(binop_return_type(binop))
             }
         }
-        Exp::Negative(exp) => type_check_exp(exp, &Type::Int, variables),
-        Exp::Not(exp) => type_check_exp(exp, &Type::Bool, variables),
-        Exp::BitNot(exp) => type_check_exp(exp, &Type::Int, variables),
+        Exp::Negative(exp) => type_check_exp(exp, &Type::Int, func_params, variables),
+        Exp::Not(exp) => type_check_exp(exp, &Type::Bool, func_params, variables),
+        Exp::BitNot(exp) => type_check_exp(exp, &Type::Int, func_params, variables),
         Exp::Ternary(b) => {
             let (e1, e2, e3) = &**b;
-            type_check_exp(e1, &Type::Bool, variables)?;
-            type_check_exp(e2, t, variables)?;
-            if let Err(err) = type_check_exp(e3, t, variables) {
+            type_check_exp(e1, &Type::Bool, func_params, variables)?;
+            type_check_exp(e2, t, func_params, variables)?;
+            if let Err(err) = type_check_exp(e3, t, func_params, variables) {
                 Err(err)
             } else {
                 Ok(Type::Bool)
             }
         }
+        Exp::Call(call) => match call {
+            crate::ast::Call::Print(arg_list) => todo!(),
+            crate::ast::Call::Read(arg_list) => todo!(),
+            crate::ast::Call::Flush(arg_list) => todo!(),
+            crate::ast::Call::Func(name, arg_list) => {
+                if let Some(data) = func_params.get(name) {
+                    if data.1 == t {
+                        return Ok(data.1.clone());
+                    } else {
+                        return Err(data.1.clone());
+                    }
+                }
+                println!(
+                    "Error: No function with name \"{}\" found.",
+                    str::from_utf8(name).unwrap()
+                );
+                exit(7);
+            }
+        },
     }
 }
 
@@ -252,14 +386,17 @@ fn binop_return_type(binop: &Binop) -> Type {
     }
 }
 
-pub fn type_check<'a>(
+fn type_check<'a>(
     return_type: &Type,
     abs: &Abs<'a>,
+    func_params: &HashMap<&'a [u8], (&Vec<Param<'a>>, &Type)>,
     variables: &mut HashMap<&'a [u8], Type>,
 ) -> bool {
     match abs {
         Abs::ASGN(name, exp) => {
-            if let Err(t) = type_check_exp(exp, variables.get(name).unwrap(), variables) {
+            if let Err(t) =
+                type_check_exp(exp, variables.get(name).unwrap(), func_params, variables)
+            {
                 println!("Type Error: Wrong use of type {t:?} in expression {exp:?}");
                 false
             } else {
@@ -267,16 +404,16 @@ pub fn type_check<'a>(
             }
         }
         Abs::WHILE(exp, statements) => {
-            if type_check_exp(exp, &Type::Bool, variables).is_err() {
+            if type_check_exp(exp, &Type::Bool, func_params, variables).is_err() {
                 println!("Type Error: While condition {exp:?} should evaluate to bool");
                 false
             } else {
-                type_check(return_type, statements, variables)
+                type_check(return_type, statements, func_params, variables)
             }
         }
         Abs::CONT => true,
         Abs::RET(exp) => {
-            if let Err(err_type) = type_check_exp(exp, return_type, variables) {
+            if let Err(err_type) = type_check_exp(exp, return_type, func_params, variables) {
                 println!(
                     "Type Error: Function should return {return_type:?} but it currently returns {err_type:?}"
                 );
@@ -287,33 +424,35 @@ pub fn type_check<'a>(
         }
         Abs::DECL(name, t, abs) => {
             variables.insert(name, t.clone());
-            type_check(return_type, abs, variables)
+            type_check(return_type, abs, func_params, variables)
         }
         Abs::IF(exp, abs1, abs2) => {
-            if type_check_exp(exp, &Type::Bool, variables).is_err() {
+            if type_check_exp(exp, &Type::Bool, func_params, variables).is_err() {
                 println!("Type Error: If condition need to evaluate to bool");
                 false
             } else {
-                type_check(return_type, abs1, variables) && type_check(return_type, abs2, variables)
+                type_check(return_type, abs1, func_params, variables)
+                    && type_check(return_type, abs2, func_params, variables)
             }
         }
-        Abs::FOR(abs) => type_check(return_type, abs, variables),
+        Abs::FOR(abs) => type_check(return_type, abs, func_params, variables),
         Abs::BRK => true,
         Abs::SEQ(items) => {
             for abs in items {
-                if !type_check(return_type, abs, variables) {
+                if !type_check(return_type, abs, func_params, variables) {
                     return false;
                 }
             }
             true
         }
         Abs::EXP(exp) => {
-            if type_check_exp(exp, &Type::Bool, variables).is_err() {
+            if type_check_exp(exp, &Type::Bool, func_params, variables).is_err() {
                 println!("Type Error: The for loops break condition should evaluate to bool");
                 false
             } else {
                 true
             }
         }
+        Abs::CALL(name, args) => arg_type_check(name, func_params, args.clone(), variables),
     }
 }

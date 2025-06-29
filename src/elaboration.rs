@@ -2,7 +2,7 @@ use std::{iter, process::exit};
 
 use ast::{Exp, Type};
 
-use crate::ast::{self, Asnop, Binop, Lvalue, Simp, Statement};
+use crate::ast::{self, Asnop, Binop, Call, Lvalue, Simp, Statement};
 #[derive(Debug, Clone)]
 pub enum Abs<'a> {
     ASGN(&'a [u8], Exp<'a>),
@@ -15,6 +15,7 @@ pub enum Abs<'a> {
     BRK,
     SEQ(Vec<Abs<'a>>),
     EXP(Exp<'a>),
+    CALL(&'a [u8], Vec<Exp<'a>>),
 }
 fn translate_simpopt<'a>(simpopt: Option<Simp<'a>>) -> Abs<'a> {
     match simpopt {
@@ -27,6 +28,7 @@ fn translate_simpopt<'a>(simpopt: Option<Simp<'a>>) -> Abs<'a> {
                     Abs::DECL(name, typ, Box::new(Abs::SEQ(vec![Abs::ASGN(name, exp)])))
                 }
             },
+            ast::Simp::Call(call) => todo!(),
         },
     }
 }
@@ -55,6 +57,7 @@ pub fn translate_statement<'a>(
                         Abs::DECL(name, typ, Box::new(Abs::SEQ(vec)))
                     }
                 },
+                ast::Simp::Call(c) => todo!(),
             },
             Statement::Control(control) => match *control {
                 ast::Control::If(exp, statement, statement2) => match statement2 {
@@ -120,7 +123,7 @@ pub fn translate_statement<'a>(
                 ast::Control::Return(exp) => Abs::RET(exp),
             },
             Statement::Block(block) => {
-                let mut statements = block.get_statements().iter().cloned().peekable();
+                let mut statements = block.into_statements().into_iter().peekable();
                 let mut instructions = Vec::new();
                 while statements.peek().is_some() {
                     instructions.push(translate_statement(&mut statements));
