@@ -1,5 +1,5 @@
 
-use crate::ast::{Program, Block, Control, Type, Statement, Exp, Decl, Simp, Asnop, Lvalue, Binop};
+use crate::ast::{Program, Function, ParamList, Param, ArgList, Call, Block, Control, Type, Statement, Exp, Decl, Simp, Asnop, Lvalue, Binop};
 use crate::Token;
 use crate::tokenizer::Keyword;
 use crate::tokenizer::ArithmeticSymbolEqual;
@@ -10,9 +10,9 @@ grammar<'a>(input: &'a [u8]);
 
 extern {
     enum Token<'a> {
-        "main" => Token::Main,
         "ident" => Token::Identifier(<&'a [u8]>),
         "num" => Token::NumericValue(<i32>),
+        "," => Token::Comma,
         "+" => Token::ArithmeticSymbol(ArithmeticSymbol::Plus),
         "*" => Token::ArithmeticSymbol(ArithmeticSymbol::Mult),
         "/" => Token::ArithmeticSymbol(ArithmeticSymbol::Div),
@@ -72,6 +72,7 @@ extern {
         "void" => Token::Keyword(Keyword::Void),
         "char" => Token::Keyword(Keyword::Char),
         "string" => Token::Keyword(Keyword::String),
+        "flush" => Token::Keyword(Keyword::Flush),
     }
 }
 
@@ -106,16 +107,20 @@ pub ControlNoIf: Control<'a> = {
     "return" <e:Exp> ";" => Control::Return(e),
 }
 
+pub Type: Type = {
+    "int" => Type::Int,
+    "bool"  => Type::Bool,
+}
+
 pub Decl: Decl<'a> = {
-    "int" <name:"ident"> => Decl::Declare(Type::Int, name),
-    "int" <name:"ident"> "=" <exp:Exp> => Decl::Assign((Type::Int, name, exp)),
-    "bool" <name:"ident"> => Decl::Declare(Type::Bool, name),
-    "bool" <name:"ident"> "=" <exp:Exp> => Decl::Assign((Type::Bool, name, exp)),
+    <t:Type> <name:"ident"> => Decl::Declare(t, name),
+    <t:Type> <name:"ident"> "=" <exp:Exp> => Decl::Assign((t, name, exp)),
 }
 
 pub Simp: Simp<'a> = {
     <lvalue:Lvalue> <asnop:Asnop> <exp:Exp> => Simp::Simp((lvalue, asnop, exp)),
     <decl:Decl> => Simp::Decl(decl),
+    <call:Call> => Simp::Call(call),
 }
 
 pub Lvalue: Lvalue<'a> = {
@@ -141,6 +146,7 @@ pub Exp: Exp<'a> = {
     #[precedence(level="0")]
     "true" => Exp::True,
     "false" => Exp::False,
+    <call:Call> => Exp::Call(call),
     "(" <TopExp> ")",
     <n:"num"> => Exp::Intconst(n),
     <name:"ident"> => Exp::Ident(name),
@@ -187,8 +193,42 @@ pub Block: Block<'a> = {
 "{" <stmts:Statement*> "}" => Block::Block(stmts),
 }
 
+pub Param: Param<'a> = {
+    <t:Type> <name:"ident"> => Param::Param(t, name),
+}
+
+pub ParamListFollow: Param<'a> = {
+    "," <param:Param> => param,
+}
+
+pub ParamList: ParamList<'a> = {
+    "(" ")" => ParamList::ParamList(Vec::new()),
+    "(" <param:Param> <mut paramlistfollow:ParamListFollow*> ")" => {paramlistfollow.push(param); ParamList::ParamList(paramlistfollow)},
+}
+
+pub ArgListFollow: Exp<'a> = {
+    "," <e:Exp> => e,
+}
+
+pub ArgList: ArgList<'a> = {
+    "(" ")" => ArgList::Args(Vec::new()),
+    "(" <e:Exp> <mut arglistfollow:ArgListFollow*> ")" => {arglistfollow.push(e); ArgList::Args(arglistfollow)},
+}
+
+pub Call: Call<'a> = {
+    "print" <args:ArgList> => Call::Print(args),
+    "read" <args:ArgList> => Call::Read(args),
+    "flush" <args:ArgList> => Call::Flush(args),
+    <name:"ident"> <args:ArgList> => Call::Func(name, args),
+} 
+
+pub Function: Function<'a> = {
+    <t:Type> <name:"ident"> <paramlist:ParamList> <block:Block> => Function::Function(t, name, paramlist, block),
+}
+
 pub Program: Program<'a> = {
-    "int" <name:"ident"> "(" ")" <block:Block> => Program::Block(block),
+     <function:Function> => Program::Program(function, Box::new(Program::End)),
+     <function:Function> <program:Program> => Program::Program(function, Box::new(program)),
 }
 
 

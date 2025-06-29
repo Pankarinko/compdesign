@@ -1,18 +1,18 @@
 use std::{collections::HashMap, fs::File, io::Read, iter, process::exit};
 
 use ast::Program;
-use elaboration::translate_statement;
+//use elaboration::translate_statement;
 //use elaboration::translate_statement;
 //use evaluation::execute;
 use lalrpop_util::lalrpop_mod;
-use semantics::{decl_check, return_check};
+//use semantics::{decl_check, return_check};
 use tokenizer::{Token, tokenize};
 
-use crate::{
+/*use crate::{
     code_gen::create_binary,
     ir::{IRCmd, translate_to_ir},
     semantics::{break_coninue_check, type_check},
-};
+};*/
 
 lalrpop_mod!(
     #[allow(clippy::ptr_arg)]
@@ -21,11 +21,11 @@ lalrpop_mod!(
 );
 
 pub mod ast;
-pub mod code_gen;
+/*pub mod code_gen;
 pub mod elaboration;
 pub mod instruction_selection;
 pub mod ir;
-pub mod semantics;
+pub mod semantics;*/
 pub mod tokenizer;
 
 fn main() {
@@ -69,7 +69,7 @@ fn main() {
         println!("Error: Your program cannot be parsed.");
         exit(42)
     }
-
+    /*
     /*Semantic analysis starts here*/
     if semantic_error {
         println!("Error: Invalid integer");
@@ -115,5 +115,5 @@ fn main() {
     );
     //println!("{:#?}", program);
     let string = args.next().unwrap().to_os_string();
-    create_binary(program, temp_count, string);
+    create_binary(program, temp_count, string);*/
 }

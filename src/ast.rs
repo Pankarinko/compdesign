@@ -20,6 +20,7 @@ pub enum Decl<'a> {
 pub enum Simp<'a> {
     Simp((Lvalue<'a>, Asnop, Exp<'a>)),
     Decl(Decl<'a>),
+    Call(Call<'a>),
 }
 
 #[derive(Debug, Clone)]
@@ -56,6 +57,7 @@ pub enum Exp<'a> {
     Not(Box<Exp<'a>>),
     BitNot(Box<Exp<'a>>),
     Ternary(Box<(Exp<'a>, Exp<'a>, Exp<'a>)>),
+    Call(Call<'a>),
 }
 
 #[derive(Debug, Clone)]
@@ -95,10 +97,11 @@ pub enum Asnop {
 }
 #[derive(Debug, Clone)]
 pub enum Program<'a> {
-    Block(Block<'a>),
+    Program(Function<'a>, Box<Program<'a>>),
+    End,
 }
 
-impl<'a> Program<'a> {
+/*impl<'a> Program<'a> {
     pub fn get_statements(&self) -> &Vec<Statement<'a>> {
         match self {
             Program::Block(block) => block.get_statements(),
@@ -116,6 +119,21 @@ impl<'a> Program<'a> {
             Program::Block(block) => Statement::Block(block),
         }
     }
+}*/
+
+#[derive(Debug, Clone)]
+pub enum Function<'a> {
+    Function(Type, &'a [u8], ParamList<'a>, Block<'a>),
+}
+
+#[derive(Debug, Clone)]
+pub enum ParamList<'a> {
+    ParamList(Vec<Param<'a>>),
+}
+
+#[derive(Debug, Clone)]
+pub enum Param<'a> {
+    Param(Type, &'a [u8]),
 }
 
 #[derive(Debug, Clone)]
@@ -129,4 +147,17 @@ impl<'a> Block<'a> {
             Block::Block(statements) => statements,
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub enum Call<'a> {
+    Print(ArgList<'a>),
+    Read(ArgList<'a>),
+    Flush(ArgList<'a>),
+    Func(&'a [u8], ArgList<'a>),
+}
+
+#[derive(Debug, Clone)]
+pub enum ArgList<'a> {
+    Args(Vec<Exp<'a>>),
 }
