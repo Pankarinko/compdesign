@@ -21,11 +21,11 @@ lalrpop_mod!(
 );
 
 pub mod ast;
-/*pub mod code_gen;
+/*pub mod code_gen;*/
 pub mod elaboration;
-pub mod instruction_selection;
-pub mod ir;
-pub mod semantics;*/
+/*pub mod instruction_selection;
+pub mod ir;*/
+pub mod semantics;
 pub mod tokenizer;
 
 fn main() {

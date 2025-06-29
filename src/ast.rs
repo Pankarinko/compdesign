@@ -125,6 +125,12 @@ impl<'a> Function<'a> {
             Function::Function(_, _, _, Block::Block(stmts)) => stmts,
         }
     }
+
+    pub fn get_name(&self) -> &'a [u8] {
+        match self {
+            Function::Function(_, name, _, _) => name,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

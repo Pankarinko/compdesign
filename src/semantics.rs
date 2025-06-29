@@ -1,9 +1,31 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::{
-    ast::{Binop, Exp, Type},
+    ast::{Binop, Exp, Function, Type},
     elaboration::Abs,
 };
+
+pub fn check_function_names(funcs: &Vec<Function>) -> bool {
+    let mut names = HashSet::new();
+    let mut main = false;
+    for f in funcs.iter() {
+        if !names.insert(f.get_name()) {
+            println!(
+                "Error: the function \"{}\" is declared more than once.",
+                str::from_utf8(f.get_name()).unwrap()
+            );
+            return false;
+        }
+        if f.get_name() == b"main" {
+            main = true;
+        }
+    }
+    if !main {
+        println!("Error: missing main function.");
+        return false;
+    }
+    true
+}
 
 pub fn return_check<'a>(s: &Abs<'a>) -> bool {
     match s {
