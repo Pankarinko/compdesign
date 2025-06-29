@@ -77,9 +77,8 @@ fn main() {
         println!("Error: Invalid integer");
         exit(7)
     }
-    let tree = check_semantics(ast);
-
-    //println!("{:?}", tree);
+    let funcs = check_semantics(ast);
+    //println!("{:#?}", funcs);
     /*
     if !return_check(&tree) {
         println!("Error: Your program does not return.");

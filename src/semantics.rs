@@ -5,11 +5,11 @@ use std::{
 };
 
 use crate::{
-    ast::{ArgList, Binop, Exp, Function, Param, Program, Type},
+    ast::{Binop, Exp, Function, Param, Program, Statement, Type},
     elaboration::{Abs, translate_statement},
 };
 
-pub fn check_semantics<'a>(program: Program<'a>) -> Vec<Abs<'a>> {
+pub fn check_semantics<'a>(program: Program<'a>) -> Vec<(&'a [u8], Abs<'a>)> {
     let funcs = program.into_functions();
     if !check_function_names(funcs) {
         exit(7);
@@ -43,7 +43,7 @@ fn check_function_names(funcs: &Vec<Function>) -> bool {
     true
 }
 
-fn check_function_semantics<'a>(funcs: &Vec<Function<'a>>) -> Vec<Abs<'a>> {
+fn check_function_semantics<'a>(funcs: &Vec<Function<'a>>) -> Vec<(&'a [u8], Abs<'a>)> {
     let mut abs_funcs = Vec::new();
     let func_params = funcs
         .iter()
@@ -53,13 +53,9 @@ fn check_function_semantics<'a>(funcs: &Vec<Function<'a>>) -> Vec<Abs<'a>> {
         let mut declared: Vec<&'a [u8]> = f.get_params().iter().map(|p| p.get_name()).collect();
         let mut assigned = declared.clone();
         let stmts = translate_statement(
-            &mut f
-                .clone()
-                .get_block()
-                .into_statements()
-                .into_iter()
-                .peekable(),
+            &mut iter::once(Statement::Block(f.clone().get_block())).peekable(),
         );
+        println!("{:?}", stmts);
         if !return_check(&stmts) {
             println!(
                 "Error: Function \"{}\" does not return.",
@@ -87,7 +83,7 @@ fn check_function_semantics<'a>(funcs: &Vec<Function<'a>>) -> Vec<Abs<'a>> {
             println!("Error: Break and continue found outside of loop.");
             exit(7)
         }
-        abs_funcs.push(stmts);
+        abs_funcs.push((f.get_name(), stmts));
     }
     abs_funcs
 }
@@ -131,6 +127,7 @@ fn arg_type_check<'a>(
 }
 
 fn return_check<'a>(s: &Abs<'a>) -> bool {
+    println!("{:?}", s);
     match s {
         Abs::RET(_) => true,
         Abs::DECL(_, _, seq) => return_check(seq),

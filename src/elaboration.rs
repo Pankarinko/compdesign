@@ -28,7 +28,12 @@ fn translate_simpopt<'a>(simpopt: Option<Simp<'a>>) -> Abs<'a> {
                     Abs::DECL(name, typ, Box::new(Abs::SEQ(vec![Abs::ASGN(name, exp)])))
                 }
             },
-            ast::Simp::Call(call) => todo!(),
+            ast::Simp::Call(call) => match call {
+                Call::Print(arg_list) => Abs::CALL(b"print", arg_list.into_args()),
+                Call::Read(_) => Abs::CALL(b"read", vec![]),
+                Call::Flush(_) => Abs::CALL(b"flush", vec![]),
+                Call::Func(name, arg_list) => Abs::CALL(name, arg_list.into_args()),
+            },
         },
     }
 }
@@ -37,7 +42,7 @@ pub fn translate_statement<'a>(
     stmts: &mut std::iter::Peekable<impl Iterator<Item = Statement<'a>>>,
 ) -> Abs<'a> {
     match stmts.next() {
-        None => todo!(),
+        None => Abs::SEQ(vec![]),
         Some(s) => match s {
             Statement::Simp(simp) => match simp {
                 ast::Simp::Simp((l, a, e)) => Abs::ASGN(l.get_ident_lvalue(), map_asnop(l, a, e)),
@@ -57,7 +62,12 @@ pub fn translate_statement<'a>(
                         Abs::DECL(name, typ, Box::new(Abs::SEQ(vec)))
                     }
                 },
-                ast::Simp::Call(c) => todo!(),
+                ast::Simp::Call(call) => match call {
+                    Call::Print(arg_list) => Abs::CALL(b"print", arg_list.into_args()),
+                    Call::Read(_) => Abs::CALL(b"read", vec![]),
+                    Call::Flush(_) => Abs::CALL(b"flush", vec![]),
+                    Call::Func(name, arg_list) => Abs::CALL(name, arg_list.into_args()),
+                },
             },
             Statement::Control(control) => match *control {
                 ast::Control::If(exp, statement, statement2) => match statement2 {
