@@ -227,8 +227,7 @@ pub Function: Function<'a> = {
 }
 
 pub Program: Program<'a> = {
-     <function:Function> => Program::Program(function, Box::new(Program::End)),
-     <function:Function> <program:Program> => Program::Program(function, Box::new(program)),
+    <functions:Function*> => Program::Program(functions),
 }
 
 

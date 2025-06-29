@@ -97,33 +97,34 @@ pub enum Asnop {
 }
 #[derive(Debug, Clone)]
 pub enum Program<'a> {
-    Program(Function<'a>, Box<Program<'a>>),
-    End,
+    Program(Vec<Function<'a>>),
 }
 
-/*impl<'a> Program<'a> {
-    pub fn get_statements(&self) -> &Vec<Statement<'a>> {
+impl<'a> Program<'a> {
+    pub fn into_functions(&self) -> &Vec<Function<'a>> {
         match self {
-            Program::Block(block) => block.get_statements(),
+            Program::Program(func) => func,
         }
     }
-
-    pub fn into_statements(self) -> Vec<Statement<'a>> {
-        match self {
-            Program::Block(Block::Block(statements)) => statements,
-        }
-    }
-
-    pub fn get_block(self) -> Statement<'a> {
-        match self {
-            Program::Block(block) => Statement::Block(block),
-        }
-    }
-}*/
+}
 
 #[derive(Debug, Clone)]
 pub enum Function<'a> {
     Function(Type, &'a [u8], ParamList<'a>, Block<'a>),
+}
+
+impl<'a> Function<'a> {
+    pub fn get_params(&self) -> &Vec<Param<'a>> {
+        match self {
+            Function::Function(_, _, ParamList::ParamList(params), _) => params,
+        }
+    }
+
+    pub fn get_statements(&self) -> &Vec<Statement<'a>> {
+        match self {
+            Function::Function(_, _, _, Block::Block(stmts)) => stmts,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -139,14 +140,6 @@ pub enum Param<'a> {
 #[derive(Debug, Clone)]
 pub enum Block<'a> {
     Block(Vec<Statement<'a>>),
-}
-
-impl<'a> Block<'a> {
-    pub fn get_statements(&self) -> &Vec<Statement<'a>> {
-        match self {
-            Block::Block(statements) => statements,
-        }
-    }
 }
 
 #[derive(Debug, Clone)]
