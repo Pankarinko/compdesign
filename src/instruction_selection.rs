@@ -1,7 +1,7 @@
 use crate::ir::{IRCmd, IRExp};
 
 pub fn init_stack_counter(num_temps: usize) -> usize {
-    (num_temps + 1).saturating_sub(11)
+    (num_temps + 1).saturating_sub(7)
 }
 
 pub fn translate_main(funcs: Vec<(&[u8], usize, Vec<IRCmd>)>, assembly: &mut String) {
@@ -18,39 +18,31 @@ fn map_temp_to_register(
     temp_index: Option<usize>,
 ) -> String {
     if let Some(index) = temp_index {
-        if index < 11 {
+        if index < 7 {
             match index {
                 0 => return "ebx".to_string(),
-                1 => return "esi".to_string(),
-                2 => return "edi".to_string(),
-                3 => return "r8d".to_string(),
-                4 => return "r9d".to_string(),
-                5 => return "r10d".to_string(),
-                6 => return "r11d".to_string(),
-                7 => return "r12d".to_string(),
-                8 => return "r13d".to_string(),
-                9 => return "r14d".to_string(),
+                1 => return "r10d".to_string(),
+                2 => return "r11d".to_string(),
+                3 => return "r12d".to_string(),
+                4 => return "r13d".to_string(),
+                5 => return "r14d".to_string(),
                 _ => return "r15d".to_string(),
             }
         } else {
-            let stack_i = (index - 10) * 4;
+            let stack_i = (index - 6) * 4;
             return format!("DWORD PTR [rsp-{}]", stack_i).to_string();
         }
     }
-    if num_temps < 11 && *stack_counter < (11 - num_temps) {
+    if num_temps < 7 && *stack_counter < (7 - num_temps) {
         let stack_i = *stack_counter;
         *stack_counter += 1;
         match num_temps + stack_i {
             0 => return "ebx".to_string(),
-            1 => return "esi".to_string(),
-            2 => return "edi".to_string(),
-            3 => return "r8d".to_string(),
-            4 => return "r9d".to_string(),
-            5 => return "r10d".to_string(),
-            6 => return "r11d".to_string(),
-            7 => return "r12d".to_string(),
-            8 => return "r13d".to_string(),
-            9 => return "r14d".to_string(),
+            1 => return "r10d".to_string(),
+            2 => return "r11d".to_string(),
+            3 => return "r12d".to_string(),
+            4 => return "r13d".to_string(),
+            5 => return "r14d".to_string(),
             _ => return "r15d".to_string(),
         }
     }
@@ -86,7 +78,12 @@ pub fn translate_instruction(
             assembly.push_str(&format!("mov eax, {}\n", operand));
             assembly.push_str("ret\n");
         }
-        IRCmd::Call(call) => todo!(),
+        IRCmd::Call(call) => match call {
+            crate::ir::Call::Print(irexp) => ,
+            crate::ir::Call::Read => todo!(),
+            crate::ir::Call::Flush => todo!(),
+            crate::ir::Call::Func(_, irexps) => todo!(),
+        },
     }
 }
 
