@@ -4,13 +4,54 @@ pub fn init_stack_counter(num_temps: usize) -> usize {
     (num_temps + 1).saturating_sub(7)
 }
 
-pub fn translate_main(funcs: Vec<(&[u8], usize, Vec<IRCmd>)>, assembly: &mut String) {
-    let main = funcs.iter().find(|(name, _, _)| name == b"main").unwrap();
+pub fn translate_functions(funcs: Vec<(&[u8], usize, usize, Vec<IRCmd>)>, assembly: &mut String) {
+    let main = funcs
+        .iter()
+        .find(|(name, _, _, _)| name == b"main")
+        .unwrap();
     let temp_count = main.1;
     let mut stack_counter = init_stack_counter(main.1);
-    println!("{:?}", stack_counter);
-    for cmd in (main.2).iter().cloned() {
+    for cmd in (main.3).iter().cloned() {
         translate_instruction(temp_count, &mut stack_counter, cmd, assembly);
+    }
+    for f in funcs.iter().filter(|(name, _, _, _)| name != b"main") {
+        assembly.push_str(&format!("\n{}:\n", str::from_utf8(f.0).unwrap().to_owned()));
+        let temp_count = f.1;
+        let mut stack_counter = init_stack_counter(f.1);
+        for cmd in (f.3).iter().cloned() {
+            move_params(f.2, assembly);
+            translate_instruction(temp_count, &mut stack_counter, cmd, assembly);
+        }
+    }
+}
+
+fn move_params(num_args: usize, assembly: &mut String) {
+    let params_regs = ["edi", "esi", "edx", "ecx", "r8d", "r9d"];
+    let local_regs = ["ebx", "edi", "esi", "r8d", "r9d", "r10d"];
+    let mut i = 0;
+    while i < num_args && i < params_regs.len() {
+        assembly.push_str(&format!("mov {}, {}\n", local_regs[i], params_regs[i]));
+        i += 1;
+    }
+}
+
+fn move_args(vals: Vec<IRExp>, assembly: &mut String, num_temps: usize, stack_counter: &mut usize) {
+    let args_regs = ["edi", "esi", "edx", "ecx", "r8d", "r9d"];
+    let mut i = 0;
+    let mut new_stack_counter = 7;
+    for val in vals.iter() {
+        if i < args_regs.len() {
+            let operand = expr_to_assembly(num_temps, stack_counter, val.clone(), assembly);
+            assembly.push_str(&format!("mov {}, {}\n", args_regs[i], operand));
+            i += 1;
+        } else {
+            let operand = expr_to_assembly(num_temps, stack_counter, val.clone(), assembly);
+            assembly.push_str(&format!(
+                "mov DWORD PTR [rsp-{}], {}\n",
+                new_stack_counter, operand
+            ));
+            new_stack_counter += 1;
+        }
     }
 }
 
@@ -140,7 +181,14 @@ pub fn translate_instruction(
                 assembly.push_str("add rsp, 8\n");
                 get_register_from_stack(assembly);
             }
-            crate::ir::Call::Func(_name, _irexps) => todo!(),
+            crate::ir::Call::Func(name, args) => {
+                save_register_onto_stack(assembly);
+                let old_stack_counter = *stack_counter;
+                move_args(args, assembly, num_temps, stack_counter);
+                *stack_counter = old_stack_counter;
+                assembly.push_str(&format!("call {}\n", name));
+                get_register_from_stack(assembly);
+            }
         },
     }
 }
@@ -336,7 +384,17 @@ fn expr_to_assembly(
                 assembly.push_str(&format!("mov {}, eax\n", r));
                 r
             }
-            crate::ir::Call::Func(_, irexps) => todo!(),
+            crate::ir::Call::Func(name, args) => {
+                save_register_onto_stack(assembly);
+                let old_stack_counter = *stack_counter;
+                move_args(args, assembly, num_temps, stack_counter);
+                *stack_counter = old_stack_counter;
+                assembly.push_str(&format!("call {}\n", name));
+                get_register_from_stack(assembly);
+                let r = map_temp_to_register(num_temps, stack_counter, None);
+                assembly.push_str(&format!("mov {}, eax\n", r));
+                r
+            }
         },
     }
 }

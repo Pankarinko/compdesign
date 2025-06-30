@@ -5,11 +5,11 @@ use std::{
 };
 
 use crate::{
-    instruction_selection::{init_stack_counter, translate_instruction, translate_main},
+    instruction_selection::{init_stack_counter, translate_functions, translate_instruction},
     ir::IRCmd,
 };
 
-pub fn create_binary(program_in_ir: Vec<(&[u8], usize, Vec<IRCmd>)>, string: OsString) {
+pub fn create_binary(program_in_ir: Vec<(&[u8], usize, usize, Vec<IRCmd>)>, string: OsString) {
     let mut assembly = ".intel_syntax noprefix
         .global main
         .global _main
@@ -22,7 +22,7 @@ pub fn create_binary(program_in_ir: Vec<(&[u8], usize, Vec<IRCmd>)>, string: OsS
         _main:
 "
     .to_string();
-    translate_main(program_in_ir, &mut assembly);
+    translate_functions(program_in_ir, &mut assembly);
     //println!("{}", assembly);
     let output_file = string.to_str().unwrap();
     /*let output_file = "this_file";*/
