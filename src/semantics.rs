@@ -354,7 +354,7 @@ fn type_check_exp<'a>(
             crate::ast::Call::Print(arg_list) => {
                 let args = arg_list.clone().into_args();
                 if args.len() == 1 {
-                    if type_check_exp(&args[1], &Type::Int, func_params, variables).is_err() {
+                    if type_check_exp(&args[0], &Type::Int, func_params, variables).is_err() {
                         return Err(Type::Bool);
                     } else {
                         return Ok(Type::Int);
