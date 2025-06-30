@@ -8,45 +8,75 @@ pub fn translate_main(funcs: Vec<(&[u8], usize, Vec<IRCmd>)>, assembly: &mut Str
     let main = funcs.iter().find(|(name, _, _)| name == b"main").unwrap();
     let temp_count = main.1;
     let mut stack_counter = init_stack_counter(main.1);
+    println!("{:?}", stack_counter);
     for cmd in (main.2).iter().cloned() {
         translate_instruction(temp_count, &mut stack_counter, cmd, assembly);
     }
 }
+
+fn save_register_onto_stack(stack_counter: &mut usize, assembly: &mut String) {
+    assembly.push_str("push rbx\n");
+    assembly.push_str("push rsi\n");
+    assembly.push_str("push rdi\n");
+    assembly.push_str("push r8\n");
+    assembly.push_str("push r9\n");
+    assembly.push_str("push r10\n");
+    assembly.push_str("push r11\n");
+}
+
+fn get_register_from_stack(stack_counter: &mut usize, assembly: &mut String) {
+    assembly.push_str("pop r11\n");
+    assembly.push_str("pop r10\n");
+    assembly.push_str("pop r9\n");
+    assembly.push_str("pop r8\n");
+    assembly.push_str("pop rdi\n");
+    assembly.push_str("pop rsi\n");
+    assembly.push_str("pop rbx\n");
+}
+
 fn map_temp_to_register(
     num_temps: usize,
     stack_counter: &mut usize,
     temp_index: Option<usize>,
 ) -> String {
     if let Some(index) = temp_index {
-        if index < 7 {
+        if index < 11 {
             match index {
-                0 => return "ebx".to_string(),
-                1 => return "r10d".to_string(),
-                2 => return "r11d".to_string(),
-                3 => return "r12d".to_string(),
-                4 => return "r13d".to_string(),
-                5 => return "r14d".to_string(),
-                _ => return "r15d".to_string(),
+                0 => return "ebx".to_owned(),
+                1 => return "edi".to_owned(),
+                2 => return "esi".to_owned(),
+                3 => return "r8d".to_owned(),
+                4 => return "r9d".to_owned(),
+                5 => return "r10d".to_owned(),
+                6 => return "r11d".to_owned(),
+                7 => return "r12d".to_owned(),
+                8 => return "r13d".to_owned(),
+                9 => return "r14d".to_owned(),
+                _ => return "r15d".to_owned(),
             }
         } else {
-            let stack_i = (index - 6) * 4;
+            let stack_i = (index - 10 + 7) * 4;
             return format!("DWORD PTR [rsp-{}]", stack_i).to_string();
         }
     }
-    if num_temps < 7 && *stack_counter < (7 - num_temps) {
+    if num_temps < 11 && *stack_counter < (11 - num_temps) {
         let stack_i = *stack_counter;
         *stack_counter += 1;
         match num_temps + stack_i {
-            0 => return "ebx".to_string(),
-            1 => return "r10d".to_string(),
-            2 => return "r11d".to_string(),
-            3 => return "r12d".to_string(),
-            4 => return "r13d".to_string(),
-            5 => return "r14d".to_string(),
-            _ => return "r15d".to_string(),
+            0 => return "ebx".to_owned(),
+            1 => return "edi".to_owned(),
+            2 => return "esi".to_owned(),
+            3 => return "r8d".to_owned(),
+            4 => return "r9d".to_owned(),
+            5 => return "r10d".to_owned(),
+            6 => return "r11d".to_owned(),
+            7 => return "r12d".to_owned(),
+            8 => return "r13d".to_owned(),
+            9 => return "r14d".to_owned(),
+            _ => return "r15d".to_owned(),
         }
     }
-    let s_i = *stack_counter;
+    let s_i = *stack_counter + 7;
     *stack_counter += 1;
     format!("DWORD PTR [rsp-{}]", s_i * 4).to_string()
 }
@@ -79,10 +109,38 @@ pub fn translate_instruction(
             assembly.push_str("ret\n");
         }
         IRCmd::Call(call) => match call {
-            crate::ir::Call::Print(irexp) => todo!(),
-            crate::ir::Call::Read => todo!(),
-            crate::ir::Call::Flush => todo!(),
-            crate::ir::Call::Func(_, irexps) => todo!(),
+            crate::ir::Call::Print(irexp) => {
+                save_register_onto_stack(stack_counter, assembly);
+                let old_stack_counter = *stack_counter;
+                let operand = expr_to_assembly(num_temps, stack_counter, irexp, assembly);
+                *stack_counter = old_stack_counter;
+                assembly.push_str("sub rsp, 8\n");
+                assembly.push_str(&format!("mov edi, {}\n", operand));
+                assembly.push_str("call putchar\n");
+                assembly.push_str("mov rdi, QWORD PTR stdout[rip]\n");
+                assembly.push_str("call fflush\n");
+                assembly.push_str("add rsp, 8\n");
+                get_register_from_stack(stack_counter, assembly);
+            }
+            crate::ir::Call::Read => {
+                assembly.push_str(&format!("mov eax, {}\n", *stack_counter * 4));
+                save_register_onto_stack(stack_counter, assembly);
+                assembly.push_str("sub rsp, 8\n");
+                assembly.push_str("call getchar\n");
+                assembly.push_str("call fflush\n");
+                assembly.push_str("add rsp, 8\n");
+                get_register_from_stack(stack_counter, assembly);
+            }
+            crate::ir::Call::Flush => {
+                assembly.push_str(&format!("mov eax, {}\n", *stack_counter * 4));
+                save_register_onto_stack(stack_counter, assembly);
+                assembly.push_str("sub rsp, 8\n");
+                assembly.push_str("mov rdi, QWORD PTR stdout[rip]\n");
+                assembly.push_str("call fflush\n");
+                assembly.push_str("add rsp, 8\n");
+                get_register_from_stack(stack_counter, assembly);
+            }
+            crate::ir::Call::Func(_name, _irexps) => todo!(),
         },
     }
 }
@@ -238,6 +296,47 @@ fn expr_to_assembly(
             }
             new_r
         }
-        IRExp::Call(call) => todo!(),
+        IRExp::Call(call) => match *call {
+            crate::ir::Call::Print(irexp) => {
+                save_register_onto_stack(stack_counter, assembly);
+                let old_stack_counter = *stack_counter;
+                let operand = expr_to_assembly(num_temps, stack_counter, irexp, assembly);
+                *stack_counter = old_stack_counter;
+                assembly.push_str("sub rsp, 8\n");
+                assembly.push_str(&format!("mov edi, {}\n", operand));
+                assembly.push_str("call putchar\n");
+                assembly.push_str("mov rdi, QWORD PTR stdout[rip]\n");
+                assembly.push_str("call fflush\n");
+                assembly.push_str("add rsp, 8\n");
+                get_register_from_stack(stack_counter, assembly);
+                let r = map_temp_to_register(num_temps, stack_counter, None);
+                assembly.push_str(&format!("mov {}, eax\n", r));
+                r
+            }
+            crate::ir::Call::Read => {
+                assembly.push_str(&format!("mov eax, {}\n", *stack_counter * 4));
+                save_register_onto_stack(stack_counter, assembly);
+                assembly.push_str("sub rsp, 8\n");
+                assembly.push_str("call getchar\n");
+                assembly.push_str("add rsp, 8\n");
+                get_register_from_stack(stack_counter, assembly);
+                let r = map_temp_to_register(num_temps, stack_counter, None);
+                assembly.push_str(&format!("mov {}, eax\n", r));
+                r
+            }
+            crate::ir::Call::Flush => {
+                assembly.push_str(&format!("mov eax, {}\n", *stack_counter * 4));
+                save_register_onto_stack(stack_counter, assembly);
+                assembly.push_str("sub rsp, 8\n");
+                assembly.push_str("mov rdi, QWORD PTR stdout[rip]\n");
+                assembly.push_str("call fflush\n");
+                assembly.push_str("add rsp, 8\n");
+                get_register_from_stack(stack_counter, assembly);
+                let r = map_temp_to_register(num_temps, stack_counter, None);
+                assembly.push_str(&format!("mov {}, eax\n", r));
+                r
+            }
+            crate::ir::Call::Func(_, irexps) => todo!(),
+        },
     }
 }
