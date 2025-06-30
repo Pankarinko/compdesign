@@ -53,6 +53,36 @@ pub enum Op {
 }
 
 pub fn translate_to_ir<'a>(
+    funcs: Vec<(&'a [u8], Vec<&'a [u8]>, Abs<'a>)>,
+) -> Vec<(&'a [u8], Vec<IRCmd>)> {
+    let mut label_count = 0;
+    let mut funcs_in_ir = Vec::new();
+    for f in funcs {
+        let mut temp_count = 0;
+        let label_cont = 0;
+        let label_brk = 0;
+        let mut vars: HashMap<&[u8], IRExp> = HashMap::new();
+        f.1.iter().for_each(|name| {
+            vars.insert(name, IRExp::Temp(temp_count));
+            temp_count += 1;
+        });
+        let mut program = Vec::new();
+        translate_command(
+            f.2,
+            &mut program,
+            &mut temp_count,
+            &mut label_count,
+            &mut vars,
+            label_cont,
+            label_brk,
+            None,
+        );
+        funcs_in_ir.push((f.0, program));
+    }
+    funcs_in_ir
+}
+
+fn translate_command<'a>(
     abs: Abs<'a>,
     program: &mut Vec<IRCmd>,
     temp_count: &mut usize,
@@ -77,7 +107,7 @@ pub fn translate_to_ir<'a>(
             program.push(IRCmd::Label(label_start));
             program.append(&mut e.0);
             program.push(IRCmd::JumpIf(IRExp::NotBool(Box::new(e.1)), label_end));
-            translate_to_ir(
+            translate_command(
                 *abs,
                 program,
                 temp_count,
@@ -92,7 +122,7 @@ pub fn translate_to_ir<'a>(
         }
         Abs::CONT => {
             if let Some(abs) = step {
-                translate_to_ir(
+                translate_command(
                     abs.clone(),
                     program,
                     temp_count,
@@ -113,7 +143,7 @@ pub fn translate_to_ir<'a>(
         Abs::DECL(ident, _, abs) => {
             vars.insert(ident, IRExp::Temp(*temp_count));
             *temp_count += 1;
-            translate_to_ir(
+            translate_command(
                 *abs,
                 program,
                 temp_count,
@@ -131,7 +161,7 @@ pub fn translate_to_ir<'a>(
             let end_label = *label_count + 1;
             *label_count += 2;
             program.push(IRCmd::JumpIf(e1.1, then_label));
-            translate_to_ir(
+            translate_command(
                 *abs2,
                 program,
                 temp_count,
@@ -143,7 +173,7 @@ pub fn translate_to_ir<'a>(
             );
             program.push(IRCmd::Jump(end_label));
             program.push(IRCmd::Label(then_label));
-            translate_to_ir(
+            translate_command(
                 *abs1,
                 program,
                 temp_count,
@@ -165,7 +195,7 @@ pub fn translate_to_ir<'a>(
                     vars.insert(ident, IRExp::Temp(*temp_count));
                     *temp_count += 1;
                     if matches!(seq[0], Abs::ASGN(..)) {
-                        translate_to_ir(
+                        translate_command(
                             seq.remove(0),
                             program,
                             temp_count,
@@ -180,7 +210,7 @@ pub fn translate_to_ir<'a>(
                 Abs::SEQ(vec) => {
                     seq = vec;
                     if matches!(seq[0], Abs::ASGN(..)) {
-                        translate_to_ir(
+                        translate_command(
                             seq.remove(0),
                             program,
                             temp_count,
@@ -206,7 +236,7 @@ pub fn translate_to_ir<'a>(
                 program.push(IRCmd::JumpIf(IRExp::NotBool(Box::new(e.1)), label_end));
             }
             for i in 0..seq.len() - 1 {
-                translate_to_ir(
+                translate_command(
                     seq[i].clone(),
                     program,
                     temp_count,
@@ -218,7 +248,7 @@ pub fn translate_to_ir<'a>(
                 );
             }
             if let Some(last) = seq.last() {
-                translate_to_ir(
+                translate_command(
                     last.clone(),
                     program,
                     temp_count,
@@ -235,7 +265,7 @@ pub fn translate_to_ir<'a>(
         Abs::BRK => program.push(IRCmd::Jump(label_brk)),
         Abs::SEQ(items) => {
             for abs in items {
-                translate_to_ir(
+                translate_command(
                     abs,
                     program,
                     temp_count,
@@ -279,7 +309,7 @@ pub fn translate_to_ir<'a>(
     }
 }
 
-pub fn exp_to_irexp<'a>(
+fn exp_to_irexp<'a>(
     exp: &mut Exp<'a>,
     temp_count: &mut usize,
     label_count: &mut usize,

@@ -9,7 +9,7 @@ use crate::{
     elaboration::{Abs, translate_statement},
 };
 
-pub fn check_semantics<'a>(program: Program<'a>) -> Vec<(&'a [u8], Abs<'a>)> {
+pub fn check_semantics<'a>(program: Program<'a>) -> Vec<(&'a [u8], Vec<&'a [u8]>, Abs<'a>)> {
     let funcs = program.into_functions();
     if !check_function_names(funcs) {
         exit(7);
@@ -49,7 +49,9 @@ fn check_function_names(funcs: &Vec<Function>) -> bool {
     true
 }
 
-fn check_function_semantics<'a>(funcs: &Vec<Function<'a>>) -> Vec<(&'a [u8], Abs<'a>)> {
+fn check_function_semantics<'a>(
+    funcs: &Vec<Function<'a>>,
+) -> Vec<(&'a [u8], Vec<&'a [u8]>, Abs<'a>)> {
     let mut abs_funcs = Vec::new();
     let func_params = funcs
         .iter()
@@ -88,7 +90,12 @@ fn check_function_semantics<'a>(funcs: &Vec<Function<'a>>) -> Vec<(&'a [u8], Abs
             println!("Error: Break and continue found outside of loop.");
             exit(7)
         }
-        abs_funcs.push((f.get_name(), stmts));
+        let mut param_names = Vec::new();
+        for p in f.get_params() {
+            param_names.push(p.get_name());
+        }
+
+        abs_funcs.push((f.get_name(), param_names, stmts));
     }
     abs_funcs
 }

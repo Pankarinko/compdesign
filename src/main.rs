@@ -8,7 +8,7 @@ use lalrpop_util::lalrpop_mod;
 //use semantics::{decl_check, return_check};
 use tokenizer::{Token, tokenize};
 
-use crate::semantics::check_semantics;
+use crate::{ir::translate_to_ir, semantics::check_semantics};
 
 /*use crate::{
     code_gen::create_binary,
@@ -25,8 +25,8 @@ lalrpop_mod!(
 pub mod ast;
 /*pub mod code_gen;*/
 pub mod elaboration;
-/*pub mod instruction_selection;
-pub mod ir;*/
+/*pub mod instruction_selection;*/
+pub mod ir;
 pub mod semantics;
 pub mod tokenizer;
 
@@ -79,42 +79,12 @@ fn main() {
     }
     let funcs = check_semantics(ast);
     //println!("{:#?}", funcs);
+
+    let funcs_in_ir = translate_to_ir(funcs);
+    //println!("{:?}", funcs_in_ir);
     /*
-    if !return_check(&tree) {
-        println!("Error: Your program does not return.");
-        exit(7)
-    }
-    let mut declared = Vec::new();
-    let mut assigned = Vec::new();
-    if !decl_check(&tree, &mut assigned, &mut declared) {
-        println!("Error: Your code has undeclared or unassigned variables.");
-        exit(7)
-    }
-    let mut types = HashMap::new();
-    if !type_check(&ast::Type::Int, &tree, &mut types) {
-        exit(7);
-    }
-    let loop_counter = 0;
-    if !break_coninue_check(loop_counter, &tree) {
-        println!("Error: Break and continue found outside of loop.");
-        exit(7)
-    }
-    let mut program = Vec::new();
-    let mut temp_count: usize = 0;
-    let mut label_count: usize = 0;
-    let label_cont = 0;
-    let label_brk = 0;
-    let mut vars: HashMap<&[u8], ir::IRExp> = HashMap::new();
-    translate_to_ir(
-        tree,
-        &mut program,
-        &mut temp_count,
-        &mut label_count,
-        &mut vars,
-        label_cont,
-        label_brk,
-        None,
-    );
+
+
     //println!("{:#?}", program);
     let string = args.next().unwrap().to_os_string();
     create_binary(program, temp_count, string);*/
