@@ -79,7 +79,7 @@ pub fn translate_instruction(
             assembly.push_str("ret\n");
         }
         IRCmd::Call(call) => match call {
-            crate::ir::Call::Print(irexp) => ,
+            crate::ir::Call::Print(irexp) => todo!(),
             crate::ir::Call::Read => todo!(),
             crate::ir::Call::Flush => todo!(),
             crate::ir::Call::Func(_, irexps) => todo!(),
