@@ -46,10 +46,8 @@ fn move_args(vals: Vec<IRExp>, assembly: &mut String, num_temps: usize, stack_co
             i += 1;
         } else {
             let operand = expr_to_assembly(num_temps, stack_counter, val.clone(), assembly);
-            assembly.push_str(&format!(
-                "mov DWORD PTR [rsp-{}], {}\n",
-                new_stack_counter, operand
-            ));
+            assembly.push_str(&format!("mov eax, {}\n", operand));
+            assembly.push_str(&format!("mov DWORD PTR [rsp-{}], eax\n", new_stack_counter));
             new_stack_counter += 1;
         }
     }
