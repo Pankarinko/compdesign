@@ -5,12 +5,12 @@ use std::{
 };
 
 use crate::{
-    instruction_selection::{init_stack_counter, translate_instruction},
+    instruction_selection::{init_stack_counter, translate_instruction, translate_main},
     ir::IRCmd,
 };
 
-pub fn create_binary(program: Vec<IRCmd>, num_temps: usize, string: OsString) {
-    let mut program_code = ".intel_syntax noprefix
+pub fn create_binary(program_in_ir: Vec<(&[u8], usize, Vec<IRCmd>)>, string: OsString) {
+    let mut assembly = ".intel_syntax noprefix
         .global main
         .global _main
         .text
@@ -22,11 +22,8 @@ pub fn create_binary(program: Vec<IRCmd>, num_temps: usize, string: OsString) {
         _main:
 "
     .to_string();
-    let mut stack_counter = init_stack_counter(num_temps);
-    for cmd in program.into_iter() {
-        translate_instruction(num_temps, &mut stack_counter, cmd, &mut program_code);
-    }
-    //println!("{}", program_code);
+    translate_main(program_in_ir, &mut assembly);
+    //println!("{}", assembly);
     let output_file = string.to_str().unwrap();
     /*let output_file = "this_file";*/
     let mut child = Command::new("gcc")
@@ -36,7 +33,7 @@ pub fn create_binary(program: Vec<IRCmd>, num_temps: usize, string: OsString) {
         .expect("Failed to spawn child process");
     let stdin = child.stdin.as_mut().expect("Failed to open stdin");
     stdin
-        .write_all(program_code.as_bytes())
+        .write_all(assembly.as_bytes())
         .expect("Failed to write to stdin");
     child.wait().expect("gcc couldn't finish execution");
 }

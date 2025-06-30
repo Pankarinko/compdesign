@@ -8,7 +8,7 @@ use lalrpop_util::lalrpop_mod;
 //use semantics::{decl_check, return_check};
 use tokenizer::{Token, tokenize};
 
-use crate::{ir::translate_to_ir, semantics::check_semantics};
+use crate::{code_gen::create_binary, ir::translate_to_ir, semantics::check_semantics};
 
 /*use crate::{
     code_gen::create_binary,
@@ -23,9 +23,9 @@ lalrpop_mod!(
 );
 
 pub mod ast;
-/*pub mod code_gen;*/
+pub mod code_gen;
 pub mod elaboration;
-/*pub mod instruction_selection;*/
+pub mod instruction_selection;
 pub mod ir;
 pub mod semantics;
 pub mod tokenizer;
@@ -80,12 +80,10 @@ fn main() {
     let funcs = check_semantics(ast);
     //println!("{:#?}", funcs);
 
-    let funcs_in_ir = translate_to_ir(funcs);
+    let program_in_ir = translate_to_ir(funcs);
     //println!("{:?}", funcs_in_ir);
-    /*
-
 
     //println!("{:#?}", program);
     let string = args.next().unwrap().to_os_string();
-    create_binary(program, temp_count, string);*/
+    create_binary(program_in_ir, string);
 }

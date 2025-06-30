@@ -3,6 +3,15 @@ use crate::ir::{IRCmd, IRExp};
 pub fn init_stack_counter(num_temps: usize) -> usize {
     (num_temps + 1).saturating_sub(11)
 }
+
+pub fn translate_main(funcs: Vec<(&[u8], usize, Vec<IRCmd>)>, assembly: &mut String) {
+    let main = funcs.iter().find(|(name, _, _)| name == b"main").unwrap();
+    let temp_count = main.1;
+    let mut stack_counter = init_stack_counter(main.1);
+    for cmd in (main.2).iter().cloned() {
+        translate_instruction(temp_count, &mut stack_counter, cmd, assembly);
+    }
+}
 fn map_temp_to_register(
     num_temps: usize,
     stack_counter: &mut usize,
@@ -65,7 +74,6 @@ pub fn translate_instruction(
                 assembly.push_str(&format!("mov {}, eax\n", r));
             }
         }
-
         IRCmd::JumpIf(irexp, label) => {
             let operand = expr_to_assembly(num_temps, stack_counter, irexp, assembly);
             assembly.push_str(&format!("cmp {}, 1\n", operand));
@@ -78,6 +86,7 @@ pub fn translate_instruction(
             assembly.push_str(&format!("mov eax, {}\n", operand));
             assembly.push_str("ret\n");
         }
+        IRCmd::Call(call) => todo!(),
     }
 }
 
@@ -232,5 +241,6 @@ fn expr_to_assembly(
             }
             new_r
         }
+        IRExp::Call(call) => todo!(),
     }
 }

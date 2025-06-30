@@ -22,7 +22,7 @@ pub enum Call {
     Func(String, Vec<IRExp>),
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum IRCmd {
     Load(IRExp, IRExp),
     JumpIf(IRExp, usize),
@@ -54,7 +54,7 @@ pub enum Op {
 
 pub fn translate_to_ir<'a>(
     funcs: Vec<(&'a [u8], Vec<&'a [u8]>, Abs<'a>)>,
-) -> Vec<(&'a [u8], Vec<IRCmd>)> {
+) -> Vec<(&'a [u8], usize, Vec<IRCmd>)> {
     let mut label_count = 0;
     let mut funcs_in_ir = Vec::new();
     for f in funcs {
@@ -77,7 +77,7 @@ pub fn translate_to_ir<'a>(
             label_brk,
             None,
         );
-        funcs_in_ir.push((f.0, program));
+        funcs_in_ir.push((f.0, temp_count, program));
     }
     funcs_in_ir
 }
