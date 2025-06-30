@@ -14,7 +14,7 @@ pub fn translate_main(funcs: Vec<(&[u8], usize, Vec<IRCmd>)>, assembly: &mut Str
     }
 }
 
-fn save_register_onto_stack(stack_counter: &mut usize, assembly: &mut String) {
+fn save_register_onto_stack(assembly: &mut String) {
     assembly.push_str("push rbx\n");
     assembly.push_str("push rsi\n");
     assembly.push_str("push rdi\n");
@@ -24,7 +24,7 @@ fn save_register_onto_stack(stack_counter: &mut usize, assembly: &mut String) {
     assembly.push_str("push r11\n");
 }
 
-fn get_register_from_stack(stack_counter: &mut usize, assembly: &mut String) {
+fn get_register_from_stack(assembly: &mut String) {
     assembly.push_str("pop r11\n");
     assembly.push_str("pop r10\n");
     assembly.push_str("pop r9\n");
@@ -110,7 +110,7 @@ pub fn translate_instruction(
         }
         IRCmd::Call(call) => match call {
             crate::ir::Call::Print(irexp) => {
-                save_register_onto_stack(stack_counter, assembly);
+                save_register_onto_stack(assembly);
                 let old_stack_counter = *stack_counter;
                 let operand = expr_to_assembly(num_temps, stack_counter, irexp, assembly);
                 *stack_counter = old_stack_counter;
@@ -120,25 +120,25 @@ pub fn translate_instruction(
                 assembly.push_str("mov rdi, QWORD PTR stdout[rip]\n");
                 assembly.push_str("call fflush\n");
                 assembly.push_str("add rsp, 8\n");
-                get_register_from_stack(stack_counter, assembly);
+                get_register_from_stack(assembly);
             }
             crate::ir::Call::Read => {
                 assembly.push_str(&format!("mov eax, {}\n", *stack_counter * 4));
-                save_register_onto_stack(stack_counter, assembly);
+                save_register_onto_stack(assembly);
                 assembly.push_str("sub rsp, 8\n");
                 assembly.push_str("call getchar\n");
                 assembly.push_str("call fflush\n");
                 assembly.push_str("add rsp, 8\n");
-                get_register_from_stack(stack_counter, assembly);
+                get_register_from_stack(assembly);
             }
             crate::ir::Call::Flush => {
                 assembly.push_str(&format!("mov eax, {}\n", *stack_counter * 4));
-                save_register_onto_stack(stack_counter, assembly);
+                save_register_onto_stack(assembly);
                 assembly.push_str("sub rsp, 8\n");
                 assembly.push_str("mov rdi, QWORD PTR stdout[rip]\n");
                 assembly.push_str("call fflush\n");
                 assembly.push_str("add rsp, 8\n");
-                get_register_from_stack(stack_counter, assembly);
+                get_register_from_stack(assembly);
             }
             crate::ir::Call::Func(_name, _irexps) => todo!(),
         },
@@ -298,7 +298,7 @@ fn expr_to_assembly(
         }
         IRExp::Call(call) => match *call {
             crate::ir::Call::Print(irexp) => {
-                save_register_onto_stack(stack_counter, assembly);
+                save_register_onto_stack(assembly);
                 let old_stack_counter = *stack_counter;
                 let operand = expr_to_assembly(num_temps, stack_counter, irexp, assembly);
                 *stack_counter = old_stack_counter;
@@ -308,30 +308,30 @@ fn expr_to_assembly(
                 assembly.push_str("mov rdi, QWORD PTR stdout[rip]\n");
                 assembly.push_str("call fflush\n");
                 assembly.push_str("add rsp, 8\n");
-                get_register_from_stack(stack_counter, assembly);
+                get_register_from_stack(assembly);
                 let r = map_temp_to_register(num_temps, stack_counter, None);
                 assembly.push_str(&format!("mov {}, eax\n", r));
                 r
             }
             crate::ir::Call::Read => {
                 assembly.push_str(&format!("mov eax, {}\n", *stack_counter * 4));
-                save_register_onto_stack(stack_counter, assembly);
+                save_register_onto_stack(assembly);
                 assembly.push_str("sub rsp, 8\n");
                 assembly.push_str("call getchar\n");
                 assembly.push_str("add rsp, 8\n");
-                get_register_from_stack(stack_counter, assembly);
+                get_register_from_stack(assembly);
                 let r = map_temp_to_register(num_temps, stack_counter, None);
                 assembly.push_str(&format!("mov {}, eax\n", r));
                 r
             }
             crate::ir::Call::Flush => {
                 assembly.push_str(&format!("mov eax, {}\n", *stack_counter * 4));
-                save_register_onto_stack(stack_counter, assembly);
+                save_register_onto_stack(assembly);
                 assembly.push_str("sub rsp, 8\n");
                 assembly.push_str("mov rdi, QWORD PTR stdout[rip]\n");
                 assembly.push_str("call fflush\n");
                 assembly.push_str("add rsp, 8\n");
-                get_register_from_stack(stack_counter, assembly);
+                get_register_from_stack(assembly);
                 let r = map_temp_to_register(num_temps, stack_counter, None);
                 assembly.push_str(&format!("mov {}, eax\n", r));
                 r
