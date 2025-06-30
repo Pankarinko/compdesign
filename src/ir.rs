@@ -11,6 +11,15 @@ pub enum IRExp {
     NotBool(Box<IRExp>),
     NotInt(Box<IRExp>),
     Exp(Box<(IRExp, Op, IRExp)>),
+    Call(Box<Call>),
+}
+
+#[derive(Clone, Debug)]
+pub enum Call {
+    Print(IRExp),
+    Read,
+    Flush,
+    Func(String, Vec<IRExp>),
 }
 
 #[derive(Debug)]
@@ -20,6 +29,7 @@ pub enum IRCmd {
     Jump(usize),
     Label(usize),
     Return(IRExp),
+    Call(Call),
 }
 
 #[derive(Clone, Debug)]
@@ -238,6 +248,34 @@ pub fn translate_to_ir<'a>(
             }
         }
         Abs::EXP(_) => (),
+        Abs::CALL(name, mut args) => match name {
+            b"print" => {
+                let mut exp = args.pop().unwrap();
+                let mut res = exp_to_irexp(&mut exp, temp_count, label_count, vars);
+                program.append(&mut res.0);
+                program.push(IRCmd::Call(Call::Print(res.1)));
+            }
+            b"read" => {
+                program.push(IRCmd::Call(Call::Read));
+            }
+            b"flush" => {
+                program.push(IRCmd::Call(Call::Flush));
+            }
+            _ => {
+                let mut cmds = Vec::new();
+                let mut func_args = Vec::new();
+                for mut exp in args {
+                    let mut res = exp_to_irexp(&mut exp, temp_count, label_count, vars);
+                    cmds.append(&mut res.0);
+                    func_args.push(res.1);
+                }
+                program.append(&mut cmds);
+                program.push(IRCmd::Call(Call::Func(
+                    str::from_utf8(name).unwrap().to_owned(),
+                    func_args,
+                )));
+            }
+        },
     }
 }
 
@@ -426,5 +464,53 @@ pub fn exp_to_irexp<'a>(
             *temp_count += 1;
             (vec, IRExp::Temp(*temp_count - 1))
         }
+        Exp::Call(call) => match call {
+            crate::ast::Call::Print(arg_list) => {
+                let mut cmds = Vec::new();
+                let mut exp = arg_list.clone().into_args().pop().unwrap();
+                let mut res = exp_to_irexp(&mut exp, temp_count, label_count, vars);
+                cmds.append(&mut res.0);
+                cmds.push(IRCmd::Load(
+                    IRExp::Temp(*temp_count),
+                    IRExp::Call(Box::new(Call::Print(res.1))),
+                ));
+                *temp_count += 1;
+                (cmds, IRExp::Temp(*temp_count - 1))
+            }
+            crate::ast::Call::Read(..) => {
+                let cmds = vec![IRCmd::Load(
+                    IRExp::Temp(*temp_count),
+                    IRExp::Call(Box::new(Call::Read)),
+                )];
+                *temp_count += 1;
+                (cmds, IRExp::Temp(*temp_count - 1))
+            }
+            crate::ast::Call::Flush(..) => {
+                let cmds = vec![IRCmd::Load(
+                    IRExp::Temp(*temp_count),
+                    IRExp::Call(Box::new(Call::Flush)),
+                )];
+                *temp_count += 1;
+                (cmds, IRExp::Temp(*temp_count - 1))
+            }
+            crate::ast::Call::Func(name, arg_list) => {
+                let mut cmds = Vec::new();
+                let mut args = Vec::new();
+                for mut exp in arg_list.clone().into_args() {
+                    let mut res = exp_to_irexp(&mut exp, temp_count, label_count, vars);
+                    cmds.append(&mut res.0);
+                    args.push(res.1);
+                }
+                cmds.push(IRCmd::Load(
+                    IRExp::Temp(*temp_count),
+                    IRExp::Call(Box::new(Call::Func(
+                        str::from_utf8(name).unwrap().to_owned(),
+                        args,
+                    ))),
+                ));
+                *temp_count += 1;
+                (cmds, IRExp::Temp(*temp_count - 1))
+            }
+        },
     }
 }
