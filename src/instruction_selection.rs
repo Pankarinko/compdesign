@@ -15,7 +15,10 @@ pub fn translate_functions(funcs: Vec<(&[u8], usize, usize, Vec<IRCmd>)>, assemb
         translate_instruction(temp_count, &mut stack_counter, cmd, assembly);
     }
     for f in funcs.iter().filter(|(name, _, _, _)| name != b"main") {
-        assembly.push_str(&format!("\n{}:\n", str::from_utf8(f.0).unwrap().to_owned()));
+        assembly.push_str(&format!(
+            "\n_{}:\n",
+            str::from_utf8(f.0).unwrap().to_owned()
+        ));
         let temp_count = f.1;
         let mut stack_counter = init_stack_counter(f.1);
         for cmd in (f.3).iter().cloned() {

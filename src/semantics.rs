@@ -42,7 +42,7 @@ fn check_function_names(funcs: &Vec<Function>) -> bool {
                 );
                 return false;
             }
-            params.push(&p.get_name());
+            params.push(p.get_name());
         }
 
         if f.get_name() == b"main" {

@@ -301,7 +301,7 @@ fn translate_command<'a>(
                 }
                 program.append(&mut cmds);
                 program.push(IRCmd::Call(Call::Func(
-                    str::from_utf8(name).unwrap().to_owned(),
+                    format!("_{}", str::from_utf8(name).unwrap()),
                     func_args,
                 )));
             }
@@ -534,7 +534,7 @@ fn exp_to_irexp<'a>(
                 cmds.push(IRCmd::Load(
                     IRExp::Temp(*temp_count),
                     IRExp::Call(Box::new(Call::Func(
-                        str::from_utf8(name).unwrap().to_owned(),
+                        format!("_{}", str::from_utf8(name).unwrap()),
                         args,
                     ))),
                 ));
