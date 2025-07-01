@@ -320,7 +320,6 @@ fn type_check_exp<'a>(
         }
         Exp::Arithmetic(b) => {
             let (e1, binop, e2) = &**b;
-
             if let Some(binop_type) = type_check_arithmetic(binop) {
                 type_check_exp(e1, &binop_type, func_params, variables)?;
                 type_check_exp(e2, &binop_type, func_params, variables)?;
@@ -342,12 +341,12 @@ fn type_check_exp<'a>(
         Exp::BitNot(exp) => type_check_exp(exp, &Type::Int, func_params, variables),
         Exp::Ternary(b) => {
             let (e1, e2, e3) = &**b;
-            type_check_exp(e1, &Type::Bool, func_params, variables)?;
+            let first = type_check_exp(e1, &Type::Bool, func_params, variables)?;
             type_check_exp(e2, t, func_params, variables)?;
             if let Err(err) = type_check_exp(e3, t, func_params, variables) {
                 Err(err)
             } else {
-                Ok(Type::Bool)
+                Ok(t.clone())
             }
         }
         Exp::Call(call) => match call {
@@ -356,9 +355,10 @@ fn type_check_exp<'a>(
                 if args.len() == 1 {
                     if type_check_exp(&args[0], &Type::Int, func_params, variables).is_err() {
                         return Err(Type::Bool);
-                    } else {
+                    } else if *t == Type::Int {
                         return Ok(Type::Int);
                     }
+                    return Err(Type::Int);
                 }
                 println!(
                     "Error: \"print\" function takes 1 argument but {} were provided.",
@@ -390,7 +390,10 @@ fn type_check_exp<'a>(
             crate::ast::Call::Read(arg_list) => {
                 let args = arg_list.clone().into_args();
                 if args.is_empty() {
-                    return Ok(Type::Int);
+                    if *t == Type::Int {
+                        return Ok(Type::Int);
+                    }
+                    return Err(Type::Int);
                 }
                 println!(
                     "Error: \"read\" function takes zero arguments but {} were provided.",
@@ -401,7 +404,10 @@ fn type_check_exp<'a>(
             crate::ast::Call::Flush(arg_list) => {
                 let args = arg_list.clone().into_args();
                 if args.is_empty() {
-                    return Ok(Type::Int);
+                    if *t == Type::Int {
+                        return Ok(Type::Int);
+                    }
+                    return Err(Type::Int);
                 }
                 println!(
                     "Error: \"flush\" function takes zero arguments but {} were provided.",
@@ -465,6 +471,7 @@ fn type_check<'a>(
         Abs::CONT => true,
         Abs::RET(exp) => {
             if let Err(err_type) = type_check_exp(exp, return_type, func_params, variables) {
+                println!("{:?}", exp);
                 println!(
                     "Type Error: Function should return {return_type:?} but it currently returns {err_type:?}"
                 );
