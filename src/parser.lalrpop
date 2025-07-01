@@ -203,7 +203,7 @@ pub ParamListFollow: Param<'a> = {
 
 pub ParamList: ParamList<'a> = {
     "(" ")" => ParamList::ParamList(Vec::new()),
-    "(" <param:Param> <mut paramlistfollow:ParamListFollow*> ")" => {paramlistfollow.push(param); ParamList::ParamList(paramlistfollow)},
+    "(" <param:Param> <mut paramlistfollow:ParamListFollow*> ")" => {paramlistfollow.insert(0, param); ParamList::ParamList(paramlistfollow)},
 }
 
 pub ArgListFollow: Exp<'a> = {
@@ -212,7 +212,7 @@ pub ArgListFollow: Exp<'a> = {
 
 pub ArgList: ArgList<'a> = {
     "(" ")" => ArgList::Args(Vec::new()),
-    "(" <e:Exp> <mut arglistfollow:ArgListFollow*> ")" => {arglistfollow.push(e); ArgList::Args(arglistfollow)},
+    "(" <e:Exp> <mut arglistfollow:ArgListFollow*> ")" => {arglistfollow.insert(0, e); ArgList::Args(arglistfollow)},
 }
 
 pub Call: Call<'a> = {

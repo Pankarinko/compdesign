@@ -9,6 +9,7 @@ use crate::{
     elaboration::{Abs, translate_statement},
 };
 
+#[derive(Debug)]
 pub struct AbsFunction<'a> {
     pub name: &'a [u8],
     pub param_names: Vec<&'a [u8]>,
@@ -364,7 +365,7 @@ fn type_check_exp<'a>(
         Exp::BitNot(exp) => type_check_exp(exp, &Type::Int, func_params, variables),
         Exp::Ternary(b) => {
             let (e1, e2, e3) = &**b;
-            let first = type_check_exp(e1, &Type::Bool, func_params, variables)?;
+            type_check_exp(e1, &Type::Bool, func_params, variables)?;
             type_check_exp(e2, t, func_params, variables)?;
             if let Err(err) = type_check_exp(e3, t, func_params, variables) {
                 Err(err)
