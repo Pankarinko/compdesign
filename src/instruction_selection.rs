@@ -18,8 +18,8 @@ pub fn translate_functions(funcs: Vec<IRFunction<'_>>, assembly: &mut String) {
         ));
         let temp_count = f.num_temps;
         let mut stack_counter = init_stack_counter(f.num_temps);
+        move_params(f.num_params, assembly);
         for cmd in (f.instructions).iter().cloned() {
-            move_params(f.num_params, assembly);
             translate_instruction(temp_count, &mut stack_counter, cmd, assembly);
         }
     }
