@@ -38,31 +38,36 @@ fn move_params(num_params: usize, assembly: &mut String) {
 fn move_args(args: Vec<IRExp>, assembly: &mut String, num_temps: usize, stack_counter: &mut usize) {
     let args_regs = ["edi", "esi", "edx", "ecx", "r8d", "r9d"];
     let mut i = 0;
-    let mut new_stack_counter = 7;
+    let mut new_stack_counter = 8;
     while i < args.len() && i < args_regs.len() {
         let operand = expr_to_assembly(num_temps, stack_counter, args[i].clone(), assembly);
         assembly.push_str(&format!(
             "mov DWORD PTR [rsp-{}], {}\n",
-            new_stack_counter, operand
+            new_stack_counter * 4,
+            operand
         ));
         i += 1;
         new_stack_counter += 1;
     }
     let mut j = 0;
-    new_stack_counter = 7;
+    new_stack_counter = 8;
     while j < i {
         assembly.push_str(&format!(
             "mov {}, DWORD PTR [rsp-{}]\n",
-            args_regs[j], new_stack_counter
+            args_regs[j],
+            new_stack_counter * 4
         ));
         j += 1;
         new_stack_counter += 1;
     }
-    new_stack_counter = 7;
+    new_stack_counter = 8;
     while i < args.len() {
         let operand = expr_to_assembly(num_temps, stack_counter, args[i].clone(), assembly);
         assembly.push_str(&format!("mov eax, {}\n", operand));
-        assembly.push_str(&format!("mov DWORD PTR [rsp-{}], eax\n", new_stack_counter));
+        assembly.push_str(&format!(
+            "mov DWORD PTR [rsp-{}], eax\n",
+            new_stack_counter * 4
+        ));
         new_stack_counter += 1;
     }
 }
