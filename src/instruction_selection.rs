@@ -25,31 +25,44 @@ pub fn translate_functions(funcs: Vec<IRFunction<'_>>, assembly: &mut String) {
     }
 }
 
-fn move_params(num_args: usize, assembly: &mut String) {
+fn move_params(num_params: usize, assembly: &mut String) {
     let params_regs = ["edi", "esi", "edx", "ecx", "r8d", "r9d"];
     let local_regs = ["ebx", "edi", "esi", "r8d", "r9d", "r10d"];
     let mut i = 0;
-    while i < num_args && i < params_regs.len() {
+    while i < num_params && i < params_regs.len() {
         assembly.push_str(&format!("mov {}, {}\n", local_regs[i], params_regs[i]));
         i += 1;
     }
 }
 
-fn move_args(vals: Vec<IRExp>, assembly: &mut String, num_temps: usize, stack_counter: &mut usize) {
+fn move_args(args: Vec<IRExp>, assembly: &mut String, num_temps: usize, stack_counter: &mut usize) {
     let args_regs = ["edi", "esi", "edx", "ecx", "r8d", "r9d"];
     let mut i = 0;
     let mut new_stack_counter = 7;
-    for val in vals.iter() {
-        if i < args_regs.len() {
-            let operand = expr_to_assembly(num_temps, stack_counter, val.clone(), assembly);
-            assembly.push_str(&format!("mov {}, {}\n", args_regs[i], operand));
-            i += 1;
-        } else {
-            let operand = expr_to_assembly(num_temps, stack_counter, val.clone(), assembly);
-            assembly.push_str(&format!("mov eax, {}\n", operand));
-            assembly.push_str(&format!("mov DWORD PTR [rsp-{}], eax\n", new_stack_counter));
-            new_stack_counter += 1;
-        }
+    while i < args.len() && i < args_regs.len() {
+        let operand = expr_to_assembly(num_temps, stack_counter, args[i].clone(), assembly);
+        assembly.push_str(&format!(
+            "mov DWORD PTR [rsp-{}], {}\n",
+            new_stack_counter, operand
+        ));
+        i += 1;
+        new_stack_counter += 1;
+    }
+    let mut j = 0;
+    new_stack_counter = 7;
+    while j < i {
+        assembly.push_str(&format!(
+            "mov {}, DWORD PTR [rsp-{}]\n",
+            args_regs[j], new_stack_counter
+        ));
+        j += 1;
+        new_stack_counter += 1;
+    }
+    while i < args.len() {
+        let operand = expr_to_assembly(num_temps, stack_counter, args[i].clone(), assembly);
+        assembly.push_str(&format!("mov eax, {}\n", operand));
+        assembly.push_str(&format!("mov DWORD PTR [rsp-{}], eax\n", new_stack_counter));
+        new_stack_counter += 1;
     }
 }
 
