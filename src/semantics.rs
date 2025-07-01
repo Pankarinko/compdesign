@@ -51,6 +51,10 @@ fn check_function_names(funcs: &Vec<Function>) -> bool {
                 println!("Error: main function cannot take any arguments.");
                 return false;
             }
+            if !(*f.get_type() == Type::Int) {
+                println!("Error: main function should have return type Int.",);
+                return false;
+            }
         }
     }
     if !main {
