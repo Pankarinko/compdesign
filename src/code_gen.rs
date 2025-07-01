@@ -4,12 +4,9 @@ use std::{
     process::{Command, Stdio},
 };
 
-use crate::{
-    instruction_selection::{init_stack_counter, translate_functions, translate_instruction},
-    ir::IRCmd,
-};
+use crate::{instruction_selection::translate_functions, ir::IRFunction};
 
-pub fn create_binary(program_in_ir: Vec<(&[u8], usize, usize, Vec<IRCmd>)>, string: OsString) {
+pub fn create_binary(program_in_ir: Vec<IRFunction<'_>>, string: OsString) {
     let mut assembly = ".intel_syntax noprefix
         .global main
         .global _main

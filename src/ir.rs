@@ -1,7 +1,14 @@
 use std::collections::HashMap;
 
-use crate::{ast::Exp, elaboration::Abs};
+use crate::{ast::Exp, elaboration::Abs, semantics::AbsFunction};
 
+#[derive(Debug)]
+pub struct IRFunction<'a> {
+    pub name: &'a [u8],
+    pub num_temps: usize,
+    pub num_params: usize,
+    pub instructions: Vec<IRCmd>,
+}
 #[derive(Clone, Debug)]
 pub enum IRExp {
     Temp(usize),
@@ -52,32 +59,35 @@ pub enum Op {
     RShift,
 }
 
-pub fn translate_to_ir<'a>(
-    funcs: Vec<(&'a [u8], Vec<&'a [u8]>, Abs<'a>)>,
-) -> Vec<(&'a [u8], usize, usize, Vec<IRCmd>)> {
+pub fn translate_to_ir<'a>(funcs: Vec<AbsFunction<'a>>) -> Vec<IRFunction<'a>> {
     let mut label_count = 0;
     let mut funcs_in_ir = Vec::new();
     for f in funcs {
-        let mut temp_count = 0;
+        let mut num_temps = 0;
         let label_cont = 0;
         let label_brk = 0;
         let mut vars: HashMap<&[u8], IRExp> = HashMap::new();
-        f.1.iter().for_each(|name| {
-            vars.insert(name, IRExp::Temp(temp_count));
-            temp_count += 1;
+        f.param_names.iter().for_each(|name| {
+            vars.insert(name, IRExp::Temp(num_temps));
+            num_temps += 1;
         });
-        let mut program = Vec::new();
+        let mut instructions = Vec::new();
         translate_command(
-            f.2,
-            &mut program,
-            &mut temp_count,
+            f.body,
+            &mut instructions,
+            &mut num_temps,
             &mut label_count,
             &mut vars,
             label_cont,
             label_brk,
             None,
         );
-        funcs_in_ir.push((f.0, temp_count, f.1.len(), program));
+        funcs_in_ir.push(IRFunction {
+            name: f.name,
+            num_temps,
+            num_params: f.param_names.len(),
+            instructions,
+        });
     }
     funcs_in_ir
 }

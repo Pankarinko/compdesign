@@ -9,7 +9,13 @@ use crate::{
     elaboration::{Abs, translate_statement},
 };
 
-pub fn check_semantics<'a>(program: Program<'a>) -> Vec<(&'a [u8], Vec<&'a [u8]>, Abs<'a>)> {
+pub struct AbsFunction<'a> {
+    pub name: &'a [u8],
+    pub param_names: Vec<&'a [u8]>,
+    pub body: Abs<'a>,
+}
+
+pub fn check_semantics<'a>(program: Program<'a>) -> Vec<AbsFunction<'a>> {
     let funcs = program.into_functions();
     if !check_function_names(funcs) {
         exit(7);
@@ -64,9 +70,7 @@ fn check_function_names(funcs: &Vec<Function>) -> bool {
     true
 }
 
-fn check_function_semantics<'a>(
-    funcs: &Vec<Function<'a>>,
-) -> Vec<(&'a [u8], Vec<&'a [u8]>, Abs<'a>)> {
+fn check_function_semantics<'a>(funcs: &Vec<Function<'a>>) -> Vec<AbsFunction<'a>> {
     let mut abs_funcs = Vec::new();
     let func_params = funcs
         .iter()
@@ -110,7 +114,11 @@ fn check_function_semantics<'a>(
             param_names.push(p.get_name());
         }
 
-        abs_funcs.push((f.get_name(), param_names, stmts));
+        abs_funcs.push(AbsFunction {
+            name: f.get_name(),
+            param_names,
+            body: stmts,
+        });
     }
     abs_funcs
 }

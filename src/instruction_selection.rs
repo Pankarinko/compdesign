@@ -1,28 +1,25 @@
-use crate::ir::{IRCmd, IRExp};
+use crate::ir::{IRCmd, IRExp, IRFunction};
 
 pub fn init_stack_counter(num_temps: usize) -> usize {
     (num_temps + 1).saturating_sub(7)
 }
 
-pub fn translate_functions(funcs: Vec<(&[u8], usize, usize, Vec<IRCmd>)>, assembly: &mut String) {
-    let main = funcs
-        .iter()
-        .find(|(name, _, _, _)| name == b"main")
-        .unwrap();
-    let temp_count = main.1;
-    let mut stack_counter = init_stack_counter(main.1);
-    for cmd in (main.3).iter().cloned() {
+pub fn translate_functions(funcs: Vec<IRFunction<'_>>, assembly: &mut String) {
+    let main = funcs.iter().find(|f| f.name == b"main").unwrap();
+    let temp_count = main.num_temps;
+    let mut stack_counter = init_stack_counter(main.num_temps);
+    for cmd in (main.instructions).iter().cloned() {
         translate_instruction(temp_count, &mut stack_counter, cmd, assembly);
     }
-    for f in funcs.iter().filter(|(name, _, _, _)| name != b"main") {
+    for f in funcs.iter().filter(|f| f.name != b"main") {
         assembly.push_str(&format!(
             "\n_{}:\n",
-            str::from_utf8(f.0).unwrap().to_owned()
+            str::from_utf8(f.name).unwrap().to_owned()
         ));
-        let temp_count = f.1;
-        let mut stack_counter = init_stack_counter(f.1);
-        for cmd in (f.3).iter().cloned() {
-            move_params(f.2, assembly);
+        let temp_count = f.num_temps;
+        let mut stack_counter = init_stack_counter(f.num_temps);
+        for cmd in (f.instructions).iter().cloned() {
+            move_params(f.num_params, assembly);
             translate_instruction(temp_count, &mut stack_counter, cmd, assembly);
         }
     }
