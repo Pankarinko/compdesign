@@ -33,6 +33,17 @@ fn check_function_names(funcs: &Vec<Function>) -> bool {
             );
             return false;
         }
+        let mut params: Vec<&[u8]> = vec![];
+        for p in f.get_params().iter() {
+            if params.contains(&p.get_name()) {
+                println!(
+                    "Error: Function \"{}\" has duplicate parameter names.",
+                    str::from_utf8(f_name).unwrap()
+                );
+                return false;
+            }
+            params.push(&p.get_name());
+        }
 
         if f.get_name() == b"main" {
             main = true;
