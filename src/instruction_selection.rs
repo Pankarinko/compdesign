@@ -58,6 +58,7 @@ fn move_args(args: Vec<IRExp>, assembly: &mut String, num_temps: usize, stack_co
         j += 1;
         new_stack_counter += 1;
     }
+    new_stack_counter = 7;
     while i < args.len() {
         let operand = expr_to_assembly(num_temps, stack_counter, args[i].clone(), assembly);
         assembly.push_str(&format!("mov eax, {}\n", operand));
