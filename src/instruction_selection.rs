@@ -175,8 +175,6 @@ pub fn translate_instruction(
                 assembly.push_str("sub rsp, 8\n");
                 assembly.push_str(&format!("mov edi, {}\n", operand));
                 assembly.push_str("call putchar\n");
-                assembly.push_str("mov rdi, QWORD PTR stdout[rip]\n");
-                assembly.push_str("call fflush\n");
                 assembly.push_str("add rsp, 8\n");
                 get_register_from_stack(assembly);
             }
