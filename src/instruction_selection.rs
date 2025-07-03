@@ -164,6 +164,8 @@ pub fn translate_instruction(
         IRCmd::Return(irexp) => {
             let operand = expr_to_assembly(num_temps, stack_counter, irexp, assembly);
             assembly.push_str(&format!("mov eax, {}\n", operand));
+            assembly.push_str("mov rdi, QWORD PTR stdout[rip]\n");
+            assembly.push_str("call fflush\n");
             assembly.push_str("ret\n");
         }
         IRCmd::Call(call) => match call {
