@@ -20,7 +20,7 @@ pub fn create_binary(program_in_ir: Vec<IRFunction<'_>>, string: OsString) {
 "
     .to_string();
     translate_functions(program_in_ir, &mut assembly);
-    println!("{}", assembly);
+    //println!("{}", assembly);
     let output_file = string.to_str().unwrap();
     /*let output_file = "this_file";*/
     let mut child = Command::new("gcc")
