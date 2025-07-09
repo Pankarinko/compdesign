@@ -9,6 +9,7 @@ pub struct IRFunction<'a> {
     pub num_params: usize,
     pub instructions: Vec<IRCmd>,
 }
+
 #[derive(Clone, Debug)]
 pub enum IRExp {
     Temp(usize),

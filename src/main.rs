@@ -27,6 +27,7 @@ pub mod code_gen;
 pub mod elaboration;
 pub mod instruction_selection;
 pub mod ir;
+pub mod liveness;
 pub mod semantics;
 pub mod tokenizer;
 
