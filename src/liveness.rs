@@ -23,7 +23,23 @@ fn break_func_into_rules(cmds: Vec<IRCmd>) -> Vec<Vec<Rules>> {
                 temps.iter().for_each(|t| rules_line.push(Rules::Use(*t)));
                 rules_line.push(Rules::Succ(i + 1));
             }
-            IRCmd::JumpIf(irexp, _) => {}
+            IRCmd::JumpIf(exp, l) => {
+                let temps = get_temps(exp);
+                temps.iter().for_each(|t| rules_line.push(Rules::Use(*t)));
+                let line_i = cmds
+                    .iter()
+                    .position(|x| {
+                        if let IRCmd::Label(line) = x {
+                            if line == l {
+                                return true;
+                            }
+                        }
+                        false
+                    })
+                    .unwrap();
+                rules_line.push(Rules::Succ(line_i + 1));
+                rules_line.push(Rules::Succ(i + 1));
+            }
             IRCmd::Jump(l) => {
                 let line_i = cmds
                     .iter()
@@ -78,12 +94,12 @@ fn get_temps(exp: &IRExp) -> Vec<usize> {
             temps
         }
         IRExp::Call(call) => match &**call {
-            crate::ir::Call::Print(irexp) => get_temps(&irexp),
+            crate::ir::Call::Print(irexp) => get_temps(irexp),
             crate::ir::Call::Read => vec![],
             crate::ir::Call::Flush => vec![],
             crate::ir::Call::Func(_, args) => {
                 let mut temps = vec![];
-                args.iter().for_each(|x| temps.append(&mut get_temps(&x)));
+                args.iter().for_each(|x| temps.append(&mut get_temps(x)));
                 temps
             }
         },
