@@ -149,7 +149,7 @@ pub fn translate_instruction(
         IRCmd::Load(irexp, irexp1) => {
             let operand = expr_to_assembly(num_temps, stack_counter, irexp1, assembly);
             if let IRExp::Temp(i) = irexp {
-                let r = map_temp_to_register(num_temps, stack_counter, Some(i));
+                let r = map_temp_to_register(num_temps, stack_counter, Some(i.name));
                 assembly.push_str(&format!("mov eax, {}\n", operand));
                 assembly.push_str(&format!("mov {}, eax\n", r));
             }
@@ -217,7 +217,7 @@ fn expr_to_assembly(
     assembly: &mut String,
 ) -> String {
     match expr {
-        IRExp::Temp(t) => map_temp_to_register(num_temps, stack_counter, Some(t)),
+        IRExp::Temp(t) => map_temp_to_register(num_temps, stack_counter, Some(t.name)),
         IRExp::ConstInt(val) => {
             let r = map_temp_to_register(num_temps, stack_counter, None);
             assembly.push_str(&format!("mov {}, {}\n", r, val));

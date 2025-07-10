@@ -12,7 +12,7 @@ pub struct IRFunction<'a> {
 
 #[derive(Clone, Debug)]
 pub enum IRExp {
-    Temp(usize),
+    Temp(Temp),
     ConstInt(i32),
     ConstBool(bool),
     Neg(Box<IRExp>),
@@ -20,6 +20,12 @@ pub enum IRExp {
     NotInt(Box<IRExp>),
     Exp(Box<(IRExp, Op, IRExp)>),
     Call(Box<Call>),
+}
+
+#[derive(Debug, Clone)]
+pub struct Temp {
+    pub name: usize,
+    pub ver: usize,
 }
 
 #[derive(Clone, Debug)]
@@ -69,7 +75,13 @@ pub fn translate_to_ir<'a>(funcs: Vec<AbsFunction<'a>>) -> Vec<IRFunction<'a>> {
         let label_brk = 0;
         let mut vars: HashMap<&[u8], IRExp> = HashMap::new();
         f.param_names.iter().for_each(|name| {
-            vars.insert(name, IRExp::Temp(num_temps));
+            vars.insert(
+                name,
+                IRExp::Temp(Temp {
+                    name: num_temps,
+                    ver: 0,
+                }),
+            );
             num_temps += 1;
         });
         let mut instructions = Vec::new();
@@ -152,7 +164,13 @@ fn translate_command<'a>(
             program.push(IRCmd::Return(e.1));
         }
         Abs::DECL(ident, _, abs) => {
-            vars.insert(ident, IRExp::Temp(*temp_count));
+            vars.insert(
+                ident,
+                IRExp::Temp(Temp {
+                    name: *temp_count,
+                    ver: 0,
+                }),
+            );
             *temp_count += 1;
             translate_command(
                 *abs,
@@ -203,7 +221,13 @@ fn translate_command<'a>(
                     if let Abs::SEQ(vec) = *abs {
                         seq = vec
                     }
-                    vars.insert(ident, IRExp::Temp(*temp_count));
+                    vars.insert(
+                        ident,
+                        IRExp::Temp(Temp {
+                            name: *temp_count,
+                            ver: 0,
+                        }),
+                    );
                     *temp_count += 1;
                     if matches!(seq[0], Abs::ASGN(..)) {
                         translate_command(
@@ -348,11 +372,20 @@ fn exp_to_irexp<'a>(
                     let mut e2 = exp_to_irexp(&mut b.2, temp_count, label_count, vars);
                     (e1.0).append(&mut e2.0);
                     (e1.0).push(IRCmd::Load(
-                        IRExp::Temp(*temp_count),
+                        IRExp::Temp(Temp {
+                            name: *temp_count,
+                            ver: 0,
+                        }),
                         IRExp::Exp(Box::new((e1.1, Op::Div, e2.1))),
                     ));
                     *temp_count += 1;
-                    (e1.0, IRExp::Temp(*temp_count - 1))
+                    (
+                        e1.0,
+                        IRExp::Temp(Temp {
+                            name: *temp_count - 1,
+                            ver: 0,
+                        }),
+                    )
                 }
                 crate::ast::Binop::Mult => {
                     let mut e2 = exp_to_irexp(&mut b.2, temp_count, label_count, vars);
@@ -363,11 +396,20 @@ fn exp_to_irexp<'a>(
                     let mut e2 = exp_to_irexp(&mut b.2, temp_count, label_count, vars);
                     (e1.0).append(&mut e2.0);
                     (e1.0).push(IRCmd::Load(
-                        IRExp::Temp(*temp_count),
+                        IRExp::Temp(Temp {
+                            name: *temp_count,
+                            ver: 0,
+                        }),
                         IRExp::Exp(Box::new((e1.1, Op::Mod, e2.1))),
                     ));
                     *temp_count += 1;
-                    (e1.0, IRExp::Temp(*temp_count - 1))
+                    (
+                        e1.0,
+                        IRExp::Temp(Temp {
+                            name: *temp_count - 1,
+                            ver: 0,
+                        }),
+                    )
                 }
                 crate::ast::Binop::LessThan => {
                     let mut e2 = exp_to_irexp(&mut b.2, temp_count, label_count, vars);
@@ -410,18 +452,30 @@ fn exp_to_irexp<'a>(
                     vec.append(&mut e2.0);
                     vec.push(IRCmd::JumpIf(IRExp::NotBool(Box::new(e2.1)), false_label));
                     vec.push(IRCmd::Load(
-                        IRExp::Temp(*temp_count),
+                        IRExp::Temp(Temp {
+                            name: *temp_count,
+                            ver: 0,
+                        }),
                         IRExp::ConstBool(true),
                     ));
                     vec.push(IRCmd::Jump(done_label));
                     vec.push(IRCmd::Label(false_label));
                     vec.push(IRCmd::Load(
-                        IRExp::Temp(*temp_count),
+                        IRExp::Temp(Temp {
+                            name: *temp_count,
+                            ver: 0,
+                        }),
                         IRExp::ConstBool(false),
                     ));
                     vec.push(IRCmd::Label(done_label));
                     *temp_count += 1;
-                    (vec, IRExp::Temp(*temp_count - 1))
+                    (
+                        vec,
+                        IRExp::Temp(Temp {
+                            name: *temp_count - 1,
+                            ver: 0,
+                        }),
+                    )
                 }
                 crate::ast::Binop::Or => {
                     let mut vec = Vec::new();
@@ -434,18 +488,30 @@ fn exp_to_irexp<'a>(
                     vec.append(&mut e2.0);
                     vec.push(IRCmd::JumpIf(e2.1, true_label));
                     vec.push(IRCmd::Load(
-                        IRExp::Temp(*temp_count),
+                        IRExp::Temp(Temp {
+                            name: *temp_count,
+                            ver: 0,
+                        }),
                         IRExp::ConstBool(false),
                     ));
                     vec.push(IRCmd::Jump(done_label));
                     vec.push(IRCmd::Label(true_label));
                     vec.push(IRCmd::Load(
-                        IRExp::Temp(*temp_count),
+                        IRExp::Temp(Temp {
+                            name: *temp_count,
+                            ver: 0,
+                        }),
                         IRExp::ConstBool(true),
                     ));
                     vec.push(IRCmd::Label(done_label));
                     *temp_count += 1;
-                    (vec, IRExp::Temp(*temp_count - 1))
+                    (
+                        vec,
+                        IRExp::Temp(Temp {
+                            name: *temp_count - 1,
+                            ver: 0,
+                        }),
+                    )
                 }
                 crate::ast::Binop::BitAnd => {
                     let mut e2 = exp_to_irexp(&mut b.2, temp_count, label_count, vars);
@@ -494,16 +560,34 @@ fn exp_to_irexp<'a>(
             vec.append(&mut e1.0);
             vec.push(IRCmd::JumpIf(e1.1, *label_count));
             vec.append(&mut e3.0);
-            vec.push(IRCmd::Load(IRExp::Temp(*temp_count), e3.1));
+            vec.push(IRCmd::Load(
+                IRExp::Temp(Temp {
+                    name: *temp_count,
+                    ver: 0,
+                }),
+                e3.1,
+            ));
             vec.push(IRCmd::Jump(*label_count + 1));
             vec.push(IRCmd::Label(*label_count));
             *label_count += 1;
             vec.append(&mut e2.0);
-            vec.push(IRCmd::Load(IRExp::Temp(*temp_count), e2.1));
+            vec.push(IRCmd::Load(
+                IRExp::Temp(Temp {
+                    name: *temp_count,
+                    ver: 0,
+                }),
+                e2.1,
+            ));
             vec.push(IRCmd::Label(*label_count));
             *label_count += 1;
             *temp_count += 1;
-            (vec, IRExp::Temp(*temp_count - 1))
+            (
+                vec,
+                IRExp::Temp(Temp {
+                    name: *temp_count - 1,
+                    ver: 0,
+                }),
+            )
         }
         Exp::Call(call) => match call {
             crate::ast::Call::Print(arg_list) => {
@@ -512,27 +596,54 @@ fn exp_to_irexp<'a>(
                 let mut res = exp_to_irexp(&mut exp, temp_count, label_count, vars);
                 cmds.append(&mut res.0);
                 cmds.push(IRCmd::Load(
-                    IRExp::Temp(*temp_count),
+                    IRExp::Temp(Temp {
+                        name: *temp_count,
+                        ver: 0,
+                    }),
                     IRExp::Call(Box::new(Call::Print(res.1))),
                 ));
                 *temp_count += 1;
-                (cmds, IRExp::Temp(*temp_count - 1))
+                (
+                    cmds,
+                    IRExp::Temp(Temp {
+                        name: *temp_count - 1,
+                        ver: 0,
+                    }),
+                )
             }
             crate::ast::Call::Read(..) => {
                 let cmds = vec![IRCmd::Load(
-                    IRExp::Temp(*temp_count),
+                    IRExp::Temp(Temp {
+                        name: *temp_count,
+                        ver: 0,
+                    }),
                     IRExp::Call(Box::new(Call::Read)),
                 )];
                 *temp_count += 1;
-                (cmds, IRExp::Temp(*temp_count - 1))
+                (
+                    cmds,
+                    IRExp::Temp(Temp {
+                        name: *temp_count - 1,
+                        ver: 0,
+                    }),
+                )
             }
             crate::ast::Call::Flush(..) => {
                 let cmds = vec![IRCmd::Load(
-                    IRExp::Temp(*temp_count),
+                    IRExp::Temp(Temp {
+                        name: *temp_count,
+                        ver: 0,
+                    }),
                     IRExp::Call(Box::new(Call::Flush)),
                 )];
                 *temp_count += 1;
-                (cmds, IRExp::Temp(*temp_count - 1))
+                (
+                    cmds,
+                    IRExp::Temp(Temp {
+                        name: *temp_count - 1,
+                        ver: 0,
+                    }),
+                )
             }
             crate::ast::Call::Func(name, arg_list) => {
                 let mut cmds = Vec::new();
@@ -543,14 +654,23 @@ fn exp_to_irexp<'a>(
                     args.push(res.1);
                 }
                 cmds.push(IRCmd::Load(
-                    IRExp::Temp(*temp_count),
+                    IRExp::Temp(Temp {
+                        name: *temp_count,
+                        ver: 0,
+                    }),
                     IRExp::Call(Box::new(Call::Func(
                         format!("_{}", str::from_utf8(name).unwrap()),
                         args,
                     ))),
                 ));
                 *temp_count += 1;
-                (cmds, IRExp::Temp(*temp_count - 1))
+                (
+                    cmds,
+                    IRExp::Temp(Temp {
+                        name: *temp_count - 1,
+                        ver: 0,
+                    }),
+                )
             }
         },
     }
