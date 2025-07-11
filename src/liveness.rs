@@ -113,8 +113,9 @@ fn break_func_into_rules(cmds: Vec<IRCmd>) -> Vec<Vec<Rules>> {
                     temps.iter().for_each(|t| rules_line.push(Rules::Use(*t)));
                     rules_line.push(Rules::Succ(i + 1));
                 }
-                crate::ir::Call::Read => rules_line.push(Rules::Succ(i + 1)),
-                crate::ir::Call::Flush => rules_line.push(Rules::Succ(i + 1)),
+                crate::ir::Call::Read | crate::ir::Call::Flush => {
+                    rules_line.push(Rules::Succ(i + 1))
+                }
                 crate::ir::Call::Func(_, irexps) => {
                     let mut temps = vec![];
                     irexps.iter().for_each(|x| temps.append(&mut get_temps(x)));
@@ -131,12 +132,9 @@ fn break_func_into_rules(cmds: Vec<IRCmd>) -> Vec<Vec<Rules>> {
 /* Collects all the temps in an expression */
 fn get_temps(exp: &IRExp) -> Vec<usize> {
     match exp {
-        IRExp::Temp(t) => vec![*t],
-        IRExp::ConstInt(_) => vec![],
-        IRExp::ConstBool(_) => vec![],
-        IRExp::Neg(irexp) => get_temps(irexp),
-        IRExp::NotBool(irexp) => get_temps(irexp),
-        IRExp::NotInt(irexp) => get_temps(irexp),
+        IRExp::Temp(t) => vec![t.name],
+        IRExp::ConstInt(_) | IRExp::ConstBool(_) => vec![],
+        IRExp::Neg(irexp) | IRExp::NotBool(irexp) | IRExp::NotInt(irexp) => get_temps(irexp),
         IRExp::Exp(b) => {
             let mut temps = get_temps(&b.0);
             temps.append(&mut get_temps(&b.2));
@@ -144,8 +142,7 @@ fn get_temps(exp: &IRExp) -> Vec<usize> {
         }
         IRExp::Call(call) => match &**call {
             crate::ir::Call::Print(irexp) => get_temps(irexp),
-            crate::ir::Call::Read => vec![],
-            crate::ir::Call::Flush => vec![],
+            crate::ir::Call::Read | crate::ir::Call::Flush => vec![],
             crate::ir::Call::Func(_, args) => {
                 let mut temps = vec![];
                 args.iter().for_each(|x| temps.append(&mut get_temps(x)));

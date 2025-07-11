@@ -5,7 +5,7 @@ pub enum Statement<'a> {
     Block(Block<'a>),
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Type {
     Int,
     Bool,
@@ -190,6 +190,12 @@ pub enum ArgList<'a> {
 }
 
 impl<'a> ArgList<'a> {
+    pub fn get_args(&self) -> &Vec<Exp<'a>> {
+        match self {
+            ArgList::Args(args) => args,
+        }
+    }
+
     pub fn into_args(self) -> Vec<Exp<'a>> {
         match self {
             ArgList::Args(args) => args,

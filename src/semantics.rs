@@ -100,7 +100,7 @@ fn check_function_semantics<'a>(funcs: &Vec<Function<'a>>) -> Vec<AbsFunction<'a
         let mut variables = f
             .get_params()
             .iter()
-            .map(|p| (p.get_name(), p.get_type().clone()))
+            .map(|p| (p.get_name(), *p.get_type()))
             .collect();
         if !type_check(f.get_type(), &stmts, &func_params, &mut variables) {
             exit(7);
@@ -127,7 +127,7 @@ fn check_function_semantics<'a>(funcs: &Vec<Function<'a>>) -> Vec<AbsFunction<'a
 fn arg_type_check<'a>(
     f_name: &'a [u8],
     func_params: &HashMap<&'a [u8], (&Vec<Param<'a>>, &Type)>,
-    args: Vec<Exp<'a>>,
+    args: &[Exp<'a>],
     variables: &HashMap<&[u8], Type>,
 ) -> bool {
     if let Some(f_args) = func_params.get(f_name) {
@@ -282,15 +282,12 @@ fn decl_check<'a>(
 
 fn break_coninue_check(counter: usize, abs: &Abs) -> bool {
     match abs {
-        Abs::ASGN(..) => true,
-        Abs::WHILE(_, abs) => break_coninue_check(counter + 1, abs),
+        Abs::WHILE(_, abs) | Abs::FOR(abs) => break_coninue_check(counter + 1, abs),
         Abs::CONT => counter > 0,
-        Abs::RET(_) => true,
         Abs::DECL(_, _, abs) => break_coninue_check(counter, abs),
         Abs::IF(_, abs1, abs2) => {
             break_coninue_check(counter, abs1) && break_coninue_check(counter, abs2)
         }
-        Abs::FOR(abs) => break_coninue_check(counter + 1, abs),
         Abs::BRK => counter > 0,
         Abs::SEQ(items) => {
             for abs in items.iter() {
@@ -302,7 +299,7 @@ fn break_coninue_check(counter: usize, abs: &Abs) -> bool {
             }
             true
         }
-        Abs::EXP(..) => true,
+        Abs::ASGN(..) | Abs::EXP(..) | Abs::RET(..) => true,
         Abs::CALL(_items, _exps) => true,
     }
 }
@@ -313,20 +310,14 @@ fn type_check_exp<'a>(
     variables: &HashMap<&[u8], Type>,
 ) -> Result<Type, Type> {
     match exp {
-        Exp::True => {
+        Exp::True | Exp::False => {
             if *t == Type::Bool {
                 Ok(Type::Bool)
             } else {
                 Err(Type::Bool)
             }
         }
-        Exp::False => {
-            if *t == Type::Bool {
-                Ok(Type::Bool)
-            } else {
-                Err(Type::Bool)
-            }
-        }
+
         Exp::Intconst(_) => {
             if *t == Type::Int {
                 Ok(Type::Int)
@@ -335,7 +326,7 @@ fn type_check_exp<'a>(
             }
         }
         Exp::Ident(name) => {
-            let ident_type = variables.get(name).unwrap().clone();
+            let ident_type = *variables.get(name).unwrap();
             if ident_type == *t {
                 Ok(ident_type)
             } else {
@@ -355,14 +346,16 @@ fn type_check_exp<'a>(
                 return Err(Type::Bool);
             }
             if binop_return_type(binop) == *t {
-                Ok(t.clone())
+                Ok(*t)
             } else {
                 Err(binop_return_type(binop))
             }
         }
-        Exp::Negative(exp) => type_check_exp(exp, &Type::Int, func_params, variables),
+        Exp::Negative(exp) | Exp::BitNot(exp) => {
+            type_check_exp(exp, &Type::Int, func_params, variables)
+        }
         Exp::Not(exp) => type_check_exp(exp, &Type::Bool, func_params, variables),
-        Exp::BitNot(exp) => type_check_exp(exp, &Type::Int, func_params, variables),
+
         Exp::Ternary(b) => {
             let (e1, e2, e3) = &**b;
             type_check_exp(e1, &Type::Bool, func_params, variables)?;
@@ -370,12 +363,12 @@ fn type_check_exp<'a>(
             if let Err(err) = type_check_exp(e3, t, func_params, variables) {
                 Err(err)
             } else {
-                Ok(t.clone())
+                Ok(*t)
             }
         }
         Exp::Call(call) => match call {
             crate::ast::Call::Print(arg_list) => {
-                let args = arg_list.clone().into_args();
+                let args = arg_list.get_args();
                 if args.len() == 1 {
                     if type_check_exp(&args[0], &Type::Int, func_params, variables).is_err() {
                         return Err(Type::Bool);
@@ -393,16 +386,11 @@ fn type_check_exp<'a>(
             crate::ast::Call::Func(name, arg_list) => {
                 if let Some(data) = func_params.get(name) {
                     if data.1 == t
-                        && arg_type_check(
-                            name,
-                            func_params,
-                            arg_list.clone().into_args(),
-                            variables,
-                        )
+                        && arg_type_check(name, func_params, arg_list.get_args(), variables)
                     {
-                        return Ok(data.1.clone());
+                        return Ok(*data.1);
                     } else {
-                        return Err(data.1.clone());
+                        return Err(*data.1);
                     }
                 }
                 println!(
@@ -412,7 +400,7 @@ fn type_check_exp<'a>(
                 exit(7);
             }
             crate::ast::Call::Read(arg_list) => {
-                let args = arg_list.clone().into_args();
+                let args = arg_list.get_args();
                 if args.is_empty() {
                     if *t == Type::Int {
                         return Ok(Type::Int);
@@ -426,7 +414,7 @@ fn type_check_exp<'a>(
                 exit(7);
             }
             crate::ast::Call::Flush(arg_list) => {
-                let args = arg_list.clone().into_args();
+                let args = arg_list.get_args();
                 if args.is_empty() {
                     if *t == Type::Int {
                         return Ok(Type::Int);
@@ -445,10 +433,8 @@ fn type_check_exp<'a>(
 
 fn type_check_arithmetic(binop: &Binop) -> Option<Type> {
     match binop {
-        Binop::Equals => None,
-        Binop::NotEqual => None,
-        Binop::And => Some(Type::Bool),
-        Binop::Or => Some(Type::Bool),
+        Binop::Equals | Binop::NotEqual => None,
+        Binop::And | Binop::Or => Some(Type::Bool),
         _ => Some(Type::Int),
     }
 }
@@ -492,10 +478,9 @@ fn type_check<'a>(
                 type_check(return_type, statements, func_params, variables)
             }
         }
-        Abs::CONT => true,
+        Abs::CONT | Abs::BRK => true,
         Abs::RET(exp) => {
             if let Err(err_type) = type_check_exp(exp, return_type, func_params, variables) {
-                println!("{:?}", exp);
                 println!(
                     "Type Error: Function should return {return_type:?} but it currently returns {err_type:?}"
                 );
@@ -505,7 +490,7 @@ fn type_check<'a>(
             }
         }
         Abs::DECL(name, t, abs) => {
-            variables.insert(name, t.clone());
+            variables.insert(name, *t);
             type_check(return_type, abs, func_params, variables)
         }
         Abs::IF(exp, abs1, abs2) => {
@@ -518,7 +503,6 @@ fn type_check<'a>(
             }
         }
         Abs::FOR(abs) => type_check(return_type, abs, func_params, variables),
-        Abs::BRK => true,
         Abs::SEQ(items) => {
             for abs in items {
                 if !type_check(return_type, abs, func_params, variables) {
@@ -540,9 +524,8 @@ fn type_check<'a>(
                 args.len() == 1
                     && type_check_exp(&args[0], &Type::Int, func_params, variables).is_ok()
             }
-            b"read" => args.is_empty(),
-            b"flush" => args.is_empty(),
-            _ => arg_type_check(name, func_params, args.clone(), variables),
+            b"read" | b"flush" => args.is_empty(),
+            _ => arg_type_check(name, func_params, args, variables),
         },
     }
 }
