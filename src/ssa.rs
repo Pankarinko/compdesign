@@ -6,7 +6,24 @@ pub struct Phi {
 
 pub fn into_ssa() {}
 
-fn rename_temps_function(f: &mut IRFunction) {
+fn into_basic_clocks(cmds: &[IRCmd]) -> Vec<&[IRCmd]> {
+    let mut blocks = Vec::new();
+    let mut start = 0;
+    for (i, c) in cmds.iter().enumerate() {
+        if matches!(c, IRCmd::JumpIf(_, _)) {
+            blocks.push(&cmds[start..i]);
+            blocks.push(&cmds[i..=i]);
+            start = i + 1;
+        }
+        if matches!(c, IRCmd::Jump(_)) {
+            blocks.push(&cmds[start..=i]);
+            start = i + 1;
+        }
+    }
+    blocks
+}
+
+pub fn rename_temps_func(f: &mut IRFunction) {
     let mut vers: Vec<usize> = Vec::new();
     vers.resize_with(f.num_temps, || 0);
     for c in f.instructions.iter_mut() {
@@ -17,6 +34,7 @@ fn rename_temps_function(f: &mut IRFunction) {
                     vers[t.name] += 1;
                     t.ver += 1;
                 }
+                rename_temps_expr(temp, &vers);
             }
             IRCmd::JumpIf(irexp, _) => rename_temps_expr(irexp, &vers),
             IRCmd::Jump(_) => (),

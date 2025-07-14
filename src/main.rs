@@ -33,7 +33,7 @@ pub mod instruction_selection;
 pub mod ir;
 pub mod liveness;
 pub mod semantics;
-pub mod ssa;
+//pub mod ssa;
 pub mod tokenizer;
 
 fn main() {
@@ -86,18 +86,13 @@ fn main() {
     let funcs = check_semantics(ast);
     //println!("{:#?}", funcs);
 
-    let program_in_ir = translate_to_ir(funcs);
-    /*println!("{:#?}", program_in_ir);
-        let live = analyze_func_liveness(program_in_ir[0].instructions.clone());
-        println!("{:?}", live);int add(int a, int b) {
-      return a + b;
-    }
-    int main() {
-      return add(0,0);
-    }
-    */
+    let mut program_in_ir = translate_to_ir(funcs);
+    println!("{:#?}", program_in_ir[0].instructions);
 
-    //println!("{:#?}", program_in_ir);
+    /*let live = analyze_func_liveness(program_in_ir[0].instructions.clone());*/
+    /*  println!("{:?}", live);*/
+
+    println!("{:#?}", program_in_ir);
     let string = args.next().unwrap().to_os_string();
     create_binary(program_in_ir, string);
 }
