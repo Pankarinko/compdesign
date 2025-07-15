@@ -7,7 +7,7 @@ enum Rules {
 }
 
 /* Creates a vector of currently live temps for every line. Repeats until saturated. */
-pub fn analyze_func_liveness(cmds: Vec<IRCmd>) -> Vec<Vec<usize>> {
+pub fn analyze_func_liveness(cmds: &Vec<IRCmd>) -> Vec<Vec<usize>> {
     let rules = break_func_into_rules(cmds);
     let mut live_temps = Vec::new();
     for _ in 0..rules.len() {
@@ -60,7 +60,7 @@ fn collect_live_temps(rules: &[Vec<Rules>], live_temps: &mut [Vec<usize>]) -> bo
     saturated
 }
 
-fn break_func_into_rules(cmds: Vec<IRCmd>) -> Vec<Vec<Rules>> {
+fn break_func_into_rules(cmds: &Vec<IRCmd>) -> Vec<Vec<Rules>> {
     let mut rules = Vec::new();
     for (i, c) in cmds.iter().enumerate() {
         let mut rules_line = Vec::new();
