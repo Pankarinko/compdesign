@@ -361,12 +361,24 @@ fn exp_to_irexp<'a>(
                 crate::ast::Binop::Plus => {
                     let mut e2 = exp_to_irexp(&mut b.2, temp_count, label_count, vars);
                     (e1.0).append(&mut e2.0);
-                    (e1.0, IRExp::Exp(Box::new((e1.1, Op::Plus, e2.1))))
+                    (e1.0).push(IRCmd::Load(
+                        IRExp::Temp(Temp {
+                            name: *temp_count,
+                            ver: 0,
+                        }),
+                        IRExp::Exp(Box::new((e1.1, Op::Plus, e2.1))),
+                    ));
                 }
                 crate::ast::Binop::Minus => {
                     let mut e2 = exp_to_irexp(&mut b.2, temp_count, label_count, vars);
                     (e1.0).append(&mut e2.0);
-                    (e1.0, IRExp::Exp(Box::new((e1.1, Op::Minus, e2.1))))
+                    (e1.0).push(IRCmd::Load(
+                        IRExp::Temp(Temp {
+                            name: *temp_count,
+                            ver: 0,
+                        }),
+                        IRExp::Exp(Box::new((e1.1, Op::Minus, e2.1))),
+                    ));
                 }
                 crate::ast::Binop::Div => {
                     let mut e2 = exp_to_irexp(&mut b.2, temp_count, label_count, vars);
@@ -378,19 +390,17 @@ fn exp_to_irexp<'a>(
                         }),
                         IRExp::Exp(Box::new((e1.1, Op::Div, e2.1))),
                     ));
-                    *temp_count += 1;
-                    (
-                        e1.0,
-                        IRExp::Temp(Temp {
-                            name: *temp_count - 1,
-                            ver: 0,
-                        }),
-                    )
                 }
                 crate::ast::Binop::Mult => {
                     let mut e2 = exp_to_irexp(&mut b.2, temp_count, label_count, vars);
                     (e1.0).append(&mut e2.0);
-                    (e1.0, IRExp::Exp(Box::new((e1.1, Op::Mult, e2.1))))
+                    (e1.0).push(IRCmd::Load(
+                        IRExp::Temp(Temp {
+                            name: *temp_count,
+                            ver: 0,
+                        }),
+                        IRExp::Exp(Box::new((e1.1, Op::Mult, e2.1))),
+                    ));
                 }
                 crate::ast::Binop::Mod => {
                     let mut e2 = exp_to_irexp(&mut b.2, temp_count, label_count, vars);
@@ -402,44 +412,72 @@ fn exp_to_irexp<'a>(
                         }),
                         IRExp::Exp(Box::new((e1.1, Op::Mod, e2.1))),
                     ));
-                    *temp_count += 1;
-                    (
-                        e1.0,
-                        IRExp::Temp(Temp {
-                            name: *temp_count - 1,
-                            ver: 0,
-                        }),
-                    )
                 }
                 crate::ast::Binop::LessThan => {
                     let mut e2 = exp_to_irexp(&mut b.2, temp_count, label_count, vars);
                     (e1.0).append(&mut e2.0);
-                    (e1.0, IRExp::Exp(Box::new((e1.1, Op::LessThan, e2.1))))
+                    (e1.0).push(IRCmd::Load(
+                        IRExp::Temp(Temp {
+                            name: *temp_count,
+                            ver: 0,
+                        }),
+                        IRExp::Exp(Box::new((e1.1, Op::LessThan, e2.1))),
+                    ));
                 }
                 crate::ast::Binop::LessEqual => {
                     let mut e2 = exp_to_irexp(&mut b.2, temp_count, label_count, vars);
                     (e1.0).append(&mut e2.0);
-                    (e1.0, IRExp::Exp(Box::new((e1.1, Op::LessEqual, e2.1))))
+                    (e1.0).push(IRCmd::Load(
+                        IRExp::Temp(Temp {
+                            name: *temp_count,
+                            ver: 0,
+                        }),
+                        IRExp::Exp(Box::new((e1.1, Op::LessEqual, e2.1))),
+                    ));
                 }
                 crate::ast::Binop::GreaterThan => {
                     let mut e2 = exp_to_irexp(&mut b.2, temp_count, label_count, vars);
                     (e1.0).append(&mut e2.0);
-                    (e1.0, IRExp::Exp(Box::new((e1.1, Op::GreaterThan, e2.1))))
+                    (e1.0).push(IRCmd::Load(
+                        IRExp::Temp(Temp {
+                            name: *temp_count,
+                            ver: 0,
+                        }),
+                        IRExp::Exp(Box::new((e1.1, Op::GreaterThan, e2.1))),
+                    ));
                 }
                 crate::ast::Binop::GreaterEqual => {
                     let mut e2 = exp_to_irexp(&mut b.2, temp_count, label_count, vars);
                     (e1.0).append(&mut e2.0);
-                    (e1.0, IRExp::Exp(Box::new((e1.1, Op::GreaterEqual, e2.1))))
+                    (e1.0).push(IRCmd::Load(
+                        IRExp::Temp(Temp {
+                            name: *temp_count,
+                            ver: 0,
+                        }),
+                        IRExp::Exp(Box::new((e1.1, Op::GreaterEqual, e2.1))),
+                    ));
                 }
                 crate::ast::Binop::Equals => {
                     let mut e2 = exp_to_irexp(&mut b.2, temp_count, label_count, vars);
                     (e1.0).append(&mut e2.0);
-                    (e1.0, IRExp::Exp(Box::new((e1.1, Op::Equals, e2.1))))
+                    (e1.0).push(IRCmd::Load(
+                        IRExp::Temp(Temp {
+                            name: *temp_count,
+                            ver: 0,
+                        }),
+                        IRExp::Exp(Box::new((e1.1, Op::Equals, e2.1))),
+                    ));
                 }
                 crate::ast::Binop::NotEqual => {
                     let mut e2 = exp_to_irexp(&mut b.2, temp_count, label_count, vars);
                     (e1.0).append(&mut e2.0);
-                    (e1.0, IRExp::Exp(Box::new((e1.1, Op::NotEqual, e2.1))))
+                    (e1.0).push(IRCmd::Load(
+                        IRExp::Temp(Temp {
+                            name: *temp_count,
+                            ver: 0,
+                        }),
+                        IRExp::Exp(Box::new((e1.1, Op::NotEqual, e2.1))),
+                    ));
                 }
                 crate::ast::Binop::And => {
                     let mut vec = Vec::new();
@@ -469,13 +507,13 @@ fn exp_to_irexp<'a>(
                     ));
                     vec.push(IRCmd::Label(done_label));
                     *temp_count += 1;
-                    (
+                    return (
                         vec,
                         IRExp::Temp(Temp {
                             name: *temp_count - 1,
                             ver: 0,
                         }),
-                    )
+                    );
                 }
                 crate::ast::Binop::Or => {
                     let mut vec = Vec::new();
@@ -505,40 +543,78 @@ fn exp_to_irexp<'a>(
                     ));
                     vec.push(IRCmd::Label(done_label));
                     *temp_count += 1;
-                    (
+                    return (
                         vec,
                         IRExp::Temp(Temp {
                             name: *temp_count - 1,
                             ver: 0,
                         }),
-                    )
+                    );
                 }
                 crate::ast::Binop::BitAnd => {
                     let mut e2 = exp_to_irexp(&mut b.2, temp_count, label_count, vars);
                     (e1.0).append(&mut e2.0);
-                    (e1.0, IRExp::Exp(Box::new((e1.1, Op::BitAnd, e2.1))))
+                    (e1.0).push(IRCmd::Load(
+                        IRExp::Temp(Temp {
+                            name: *temp_count,
+                            ver: 0,
+                        }),
+                        IRExp::Exp(Box::new((e1.1, Op::BitAnd, e2.1))),
+                    ));
                 }
                 crate::ast::Binop::BitXor => {
                     let mut e2 = exp_to_irexp(&mut b.2, temp_count, label_count, vars);
                     (e1.0).append(&mut e2.0);
-                    (e1.0, IRExp::Exp(Box::new((e1.1, Op::BitXor, e2.1))))
+                    (e1.0).push(IRCmd::Load(
+                        IRExp::Temp(Temp {
+                            name: *temp_count,
+                            ver: 0,
+                        }),
+                        IRExp::Exp(Box::new((e1.1, Op::BitXor, e2.1))),
+                    ));
                 }
                 crate::ast::Binop::BitOr => {
                     let mut e2 = exp_to_irexp(&mut b.2, temp_count, label_count, vars);
                     (e1.0).append(&mut e2.0);
-                    (e1.0, IRExp::Exp(Box::new((e1.1, Op::BitOr, e2.1))))
+                    (e1.0).push(IRCmd::Load(
+                        IRExp::Temp(Temp {
+                            name: *temp_count,
+                            ver: 0,
+                        }),
+                        IRExp::Exp(Box::new((e1.1, Op::BitOr, e2.1))),
+                    ));
                 }
                 crate::ast::Binop::LShift => {
                     let mut e2 = exp_to_irexp(&mut b.2, temp_count, label_count, vars);
                     (e1.0).append(&mut e2.0);
-                    (e1.0, IRExp::Exp(Box::new((e1.1, Op::LShift, e2.1))))
+                    (e1.0).push(IRCmd::Load(
+                        IRExp::Temp(Temp {
+                            name: *temp_count,
+                            ver: 0,
+                        }),
+                        IRExp::Exp(Box::new((e1.1, Op::LShift, e2.1))),
+                    ));
                 }
                 crate::ast::Binop::RShift => {
                     let mut e2 = exp_to_irexp(&mut b.2, temp_count, label_count, vars);
                     (e1.0).append(&mut e2.0);
-                    (e1.0, IRExp::Exp(Box::new((e1.1, Op::RShift, e2.1))))
+                    (e1.0).push(IRCmd::Load(
+                        IRExp::Temp(Temp {
+                            name: *temp_count,
+                            ver: 0,
+                        }),
+                        IRExp::Exp(Box::new((e1.1, Op::RShift, e2.1))),
+                    ));
                 }
             }
+            *temp_count += 1;
+            (
+                e1.0,
+                IRExp::Temp(Temp {
+                    name: *temp_count - 1,
+                    ver: 0,
+                }),
+            )
         }
         Exp::Negative(exp) => {
             let e = exp_to_irexp(exp, temp_count, label_count, vars);
