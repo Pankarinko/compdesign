@@ -351,9 +351,57 @@ fn exp_to_irexp<'a>(
     vars: &mut HashMap<&'a [u8], IRExp>,
 ) -> (Vec<IRCmd>, IRExp) {
     match exp {
-        Exp::True => (vec![], IRExp::ConstBool(true)),
-        Exp::False => (vec![], IRExp::ConstBool(false)),
-        Exp::Intconst(num) => (vec![], IRExp::ConstInt(*num)),
+        Exp::True => {
+            let vec = vec![IRCmd::Load(
+                IRExp::Temp(Temp {
+                    name: *temp_count - 1,
+                    ver: 0,
+                }),
+                IRExp::ConstBool(true),
+            )];
+            *temp_count += 1;
+            (
+                vec,
+                IRExp::Temp(Temp {
+                    name: *temp_count - 1,
+                    ver: 0,
+                }),
+            )
+        }
+        Exp::False => {
+            let vec = vec![IRCmd::Load(
+                IRExp::Temp(Temp {
+                    name: *temp_count - 1,
+                    ver: 0,
+                }),
+                IRExp::ConstBool(false),
+            )];
+            *temp_count += 1;
+            (
+                vec,
+                IRExp::Temp(Temp {
+                    name: *temp_count - 1,
+                    ver: 0,
+                }),
+            )
+        }
+        Exp::Intconst(num) => {
+            let vec = vec![IRCmd::Load(
+                IRExp::Temp(Temp {
+                    name: *temp_count - 1,
+                    ver: 0,
+                }),
+                IRExp::ConstInt(*num),
+            )];
+            *temp_count += 1;
+            (
+                vec,
+                IRExp::Temp(Temp {
+                    name: *temp_count - 1,
+                    ver: 0,
+                }),
+            )
+        }
         Exp::Ident(name) => (vec![], vars.get(name).unwrap().clone()),
         Exp::Arithmetic(b) => {
             let mut e1 = exp_to_irexp(&mut b.0, temp_count, label_count, vars);
@@ -617,16 +665,64 @@ fn exp_to_irexp<'a>(
             )
         }
         Exp::Negative(exp) => {
-            let e = exp_to_irexp(exp, temp_count, label_count, vars);
-            (e.0, IRExp::Neg(Box::new(e.1)))
+            let mut e = exp_to_irexp(exp, temp_count, label_count, vars);
+            {
+                e.0.push(IRCmd::Load(
+                    IRExp::Temp(Temp {
+                        name: *temp_count - 1,
+                        ver: 0,
+                    }),
+                    IRExp::Neg(Box::new(e.1)),
+                ));
+                *temp_count += 1;
+                (
+                    e.0,
+                    IRExp::Temp(Temp {
+                        name: *temp_count - 1,
+                        ver: 0,
+                    }),
+                )
+            }
         }
         Exp::Not(exp) => {
-            let e = exp_to_irexp(exp, temp_count, label_count, vars);
-            (e.0, IRExp::NotBool(Box::new(e.1)))
+            let mut e = exp_to_irexp(exp, temp_count, label_count, vars);
+            {
+                e.0.push(IRCmd::Load(
+                    IRExp::Temp(Temp {
+                        name: *temp_count - 1,
+                        ver: 0,
+                    }),
+                    IRExp::NotBool(Box::new(e.1)),
+                ));
+                *temp_count += 1;
+                (
+                    e.0,
+                    IRExp::Temp(Temp {
+                        name: *temp_count - 1,
+                        ver: 0,
+                    }),
+                )
+            }
         }
         Exp::BitNot(exp) => {
-            let e = exp_to_irexp(exp, temp_count, label_count, vars);
-            (e.0, IRExp::NotInt(Box::new(e.1)))
+            let mut e = exp_to_irexp(exp, temp_count, label_count, vars);
+            {
+                e.0.push(IRCmd::Load(
+                    IRExp::Temp(Temp {
+                        name: *temp_count - 1,
+                        ver: 0,
+                    }),
+                    IRExp::NotInt(Box::new(e.1)),
+                ));
+                *temp_count += 1;
+                (
+                    e.0,
+                    IRExp::Temp(Temp {
+                        name: *temp_count - 1,
+                        ver: 0,
+                    }),
+                )
+            }
         }
         Exp::Ternary(b) => {
             let mut e1 = exp_to_irexp(&mut b.0, temp_count, label_count, vars);
