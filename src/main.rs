@@ -94,5 +94,5 @@ fn main() {
 
     //println!("{:#?}", program_in_ir);
     let string = args.next().unwrap().to_os_string();
-    //create_binary(program_in_ir, string);
+    create_binary(program_in_ir, string);
 }
