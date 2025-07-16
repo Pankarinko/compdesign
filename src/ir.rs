@@ -354,7 +354,7 @@ fn exp_to_irexp<'a>(
         Exp::True => {
             let vec = vec![IRCmd::Load(
                 IRExp::Temp(Temp {
-                    name: *temp_count - 1,
+                    name: *temp_count,
                     ver: 0,
                 }),
                 IRExp::ConstBool(true),
@@ -371,7 +371,7 @@ fn exp_to_irexp<'a>(
         Exp::False => {
             let vec = vec![IRCmd::Load(
                 IRExp::Temp(Temp {
-                    name: *temp_count - 1,
+                    name: *temp_count,
                     ver: 0,
                 }),
                 IRExp::ConstBool(false),
@@ -388,7 +388,7 @@ fn exp_to_irexp<'a>(
         Exp::Intconst(num) => {
             let vec = vec![IRCmd::Load(
                 IRExp::Temp(Temp {
-                    name: *temp_count - 1,
+                    name: *temp_count,
                     ver: 0,
                 }),
                 IRExp::ConstInt(*num),
@@ -669,7 +669,7 @@ fn exp_to_irexp<'a>(
             {
                 e.0.push(IRCmd::Load(
                     IRExp::Temp(Temp {
-                        name: *temp_count - 1,
+                        name: *temp_count,
                         ver: 0,
                     }),
                     IRExp::Neg(Box::new(e.1)),
@@ -689,7 +689,7 @@ fn exp_to_irexp<'a>(
             {
                 e.0.push(IRCmd::Load(
                     IRExp::Temp(Temp {
-                        name: *temp_count - 1,
+                        name: *temp_count,
                         ver: 0,
                     }),
                     IRExp::NotBool(Box::new(e.1)),
@@ -709,7 +709,7 @@ fn exp_to_irexp<'a>(
             {
                 e.0.push(IRCmd::Load(
                     IRExp::Temp(Temp {
-                        name: *temp_count - 1,
+                        name: *temp_count,
                         ver: 0,
                     }),
                     IRExp::NotInt(Box::new(e.1)),

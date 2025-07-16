@@ -159,17 +159,26 @@ pub fn translate_instruction(
             }
         }
         IRCmd::JumpIf(irexp, label) => {
-            let operand =
-                expr_to_assembly(num_temps, stack_counter, irexp, assembly, coloring).unwrap();
-            assembly.push_str(&format!("cmp {operand}, 1\n"));
+            if let Some(operand) =
+                expr_to_assembly(num_temps, stack_counter, irexp, assembly, coloring)
+            {
+                assembly.push_str(&format!("cmp {operand}, 1\n"));
+            } else {
+                assembly.push_str(&"cmp eax, 1\n".to_string());
+            }
             assembly.push_str(&format!("je _LABEL_{label}\n"));
         }
         IRCmd::Jump(label) => assembly.push_str(&format!("jmp _LABEL_{label}\n",)),
         IRCmd::Label(label) => assembly.push_str(&format!("_LABEL_{label}:\n")),
         IRCmd::Return(irexp) => {
-            let operand =
-                expr_to_assembly(num_temps, stack_counter, irexp, assembly, coloring).unwrap();
-            assembly.push_str(&format!("mov ebx, {operand}\n"));
+            if let Some(operand) =
+                expr_to_assembly(num_temps, stack_counter, irexp, assembly, coloring)
+            {
+                assembly.push_str(&format!("mov ebx, {operand}\n"));
+            } else {
+                assembly.push_str("mov ebx, eax\n");
+            }
+
             assembly.push_str("mov rdi, QWORD PTR stdout[rip]\n");
             assembly.push_str("call fflush\n");
             assembly.push_str("mov eax, ebx\n");
@@ -179,11 +188,16 @@ pub fn translate_instruction(
             crate::ir::Call::Print(irexp) => {
                 save_register_onto_stack(assembly);
                 let old_stack_counter = *stack_counter;
-                let operand =
-                    expr_to_assembly(num_temps, stack_counter, irexp, assembly, coloring).unwrap();
+                if let Some(operand) =
+                    expr_to_assembly(num_temps, stack_counter, irexp, assembly, coloring)
+                {
+                    assembly.push_str("sub rsp, 8\n");
+                    assembly.push_str(&format!("mov edi, {operand}\n"));
+                } else {
+                    assembly.push_str("sub rsp, 8\n");
+                    assembly.push_str(&"mov edi, eax\n".to_string());
+                }
                 *stack_counter = old_stack_counter;
-                assembly.push_str("sub rsp, 8\n");
-                assembly.push_str(&format!("mov edi, {operand}\n"));
                 assembly.push_str("call putchar\n");
                 assembly.push_str("add rsp, 8\n");
                 get_register_from_stack(assembly);
@@ -239,20 +253,26 @@ fn expr_to_assembly(
             None
         }
         IRExp::Neg(irexp) => {
-            let r = expr_to_assembly(num_temps, stack_counter, *irexp, assembly, coloring).unwrap();
-            assembly.push_str(&format!("mov eax, {r}\n"));
+            if let Some(r) = expr_to_assembly(num_temps, stack_counter, *irexp, assembly, coloring)
+            {
+                assembly.push_str(&format!("mov eax, {r}\n"));
+            }
             assembly.push_str(&format!("neg eax\n"));
             None
         }
         IRExp::NotBool(irexp) => {
-            let r = expr_to_assembly(num_temps, stack_counter, *irexp, assembly, coloring).unwrap();
-            assembly.push_str(&format!("mov eax, {r}\n"));
+            if let Some(r) = expr_to_assembly(num_temps, stack_counter, *irexp, assembly, coloring)
+            {
+                assembly.push_str(&format!("mov eax, {r}\n"));
+            }
             assembly.push_str(&format!("xor eax, 1\n"));
             None
         }
         IRExp::NotInt(irexp) => {
-            let r = expr_to_assembly(num_temps, stack_counter, *irexp, assembly, coloring).unwrap();
-            assembly.push_str(&format!("mov eax, {r}\n"));
+            if let Some(r) = expr_to_assembly(num_temps, stack_counter, *irexp, assembly, coloring)
+            {
+                assembly.push_str(&format!("mov eax, {r}\n"));
+            }
             assembly.push_str(&format!("not eax\n"));
             None
         }
