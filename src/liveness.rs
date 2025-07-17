@@ -1,5 +1,6 @@
 use crate::ir::{IRCmd, IRExp};
 
+#[derive(Debug)]
 enum Rules {
     Use(usize),
     Def(usize),
@@ -10,6 +11,7 @@ enum Rules {
 pub fn analyze_func_liveness(cmds: &Vec<IRCmd>) -> Vec<Vec<usize>> {
     let rules = break_func_into_rules(cmds);
     let mut live_temps = Vec::new();
+
     for _ in 0..rules.len() {
         live_temps.push(vec![]);
     }
@@ -34,7 +36,9 @@ fn collect_live_temps(rules: &[Vec<Rules>], live_temps: &mut [Vec<usize>]) -> bo
             }
         }
         for l in line.iter().filter_map(|r| {
-            if let Rules::Succ(line_i) = *r {
+            if let Rules::Succ(line_i) = *r
+                && line_i < rules.len()
+            {
                 Some(line_i)
             } else {
                 None

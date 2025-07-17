@@ -402,7 +402,23 @@ fn exp_to_irexp<'a>(
                 }),
             )
         }
-        Exp::Ident(name) => (vec![], vars.get(name).unwrap().clone()),
+        Exp::Ident(name) => {
+            let vec = vec![IRCmd::Load(
+                IRExp::Temp(Temp {
+                    name: *temp_count,
+                    ver: 0,
+                }),
+                vars.get(name).unwrap().clone(),
+            )];
+            *temp_count += 1;
+            (
+                vec,
+                IRExp::Temp(Temp {
+                    name: *temp_count - 1,
+                    ver: 0,
+                }),
+            )
+        }
         Exp::Arithmetic(b) => {
             let mut e1 = exp_to_irexp(&mut b.0, temp_count, label_count, vars);
             match b.1 {

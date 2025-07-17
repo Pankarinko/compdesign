@@ -1,3 +1,5 @@
+use std::fmt::format;
+
 use crate::{
     coloring::color_func,
     ir::{IRCmd, IRExp, IRFunction},
@@ -13,7 +15,14 @@ pub fn translate_functions(funcs: Vec<IRFunction<'_>>, assembly: &mut String) {
     let temp_count = main.num_temps;
     let mut stack_counter = init_stack_counter(main.num_temps);
     for cmd in (main.instructions).iter().cloned() {
-        translate_instruction(temp_count, &mut stack_counter, cmd, assembly, &coloring);
+        translate_instruction(
+            temp_count,
+            &mut stack_counter,
+            cmd,
+            assembly,
+            &coloring,
+            "eax".to_owned(),
+        );
     }
     for f in funcs.iter().filter(|f| f.name != b"main") {
         assembly.push_str(&format!(
@@ -25,7 +34,14 @@ pub fn translate_functions(funcs: Vec<IRFunction<'_>>, assembly: &mut String) {
         let mut stack_counter = init_stack_counter(f.num_temps);
         move_params(f.num_params, assembly);
         for cmd in (f.instructions).iter().cloned() {
-            translate_instruction(temp_count, &mut stack_counter, cmd, assembly, &coloring);
+            translate_instruction(
+                temp_count,
+                &mut stack_counter,
+                cmd,
+                assembly,
+                &coloring,
+                "eax".to_owned(),
+            );
         }
     }
 }
@@ -46,6 +62,7 @@ fn move_args(
     num_temps: usize,
     stack_counter: &mut usize,
     coloring: &Vec<usize>,
+    current_temp: &mut str,
 ) {
     let args_regs = ["edi", "esi", "edx", "ecx", "r8d", "r9d"];
     let mut i = 0;
@@ -57,11 +74,10 @@ fn move_args(
             args[i].clone(),
             assembly,
             coloring,
-        )
-        .unwrap();
-        assembly.push_str(&format!("mov eax, {operand}\n"));
+            current_temp,
+        );
         assembly.push_str(&format!(
-            "mov DWORD PTR [rsp-{}], eax\n",
+            "mov DWORD PTR [rsp-{}], {operand}\n",
             new_stack_counter * 4,
         ));
         i += 1;
@@ -86,8 +102,8 @@ fn move_args(
             args[i].clone(),
             assembly,
             coloring,
-        )
-        .unwrap();
+            current_temp,
+        );
         assembly.push_str(&format!("mov eax, {operand}\n"));
         assembly.push_str(&format!(
             "mov DWORD PTR [rsp-{}], eax\n",
@@ -117,7 +133,7 @@ fn get_register_from_stack(assembly: &mut String) {
     assembly.push_str("pop rbx\n");
 }
 
-fn map_temp_to_register(color: usize) -> String {
+fn map_temp_to_register(color: usize, load: bool, assembly: &mut String) -> String {
     if color <= 11 {
         match color {
             0 => return "ebx".to_owned(),
@@ -134,7 +150,12 @@ fn map_temp_to_register(color: usize) -> String {
         }
     } else {
         let stack_i = (color - 10 + 7) * 4;
-        return format!("DWORD PTR [rsp-{}]", stack_i).to_string();
+        if load {
+            return format!("DWORD PTR [rsp-{}]", stack_i).to_string();
+        } else {
+            assembly.push_str(&format!("mov eax, DWORD PTR [rsp-{}]\n", stack_i));
+            return "eax".to_owned();
+        }
     }
 }
 
@@ -144,40 +165,50 @@ pub fn translate_instruction(
     cmd: IRCmd,
     assembly: &mut String,
     coloring: &Vec<usize>,
+    mut current_temp: String,
 ) {
     match cmd {
         IRCmd::Load(irexp, irexp1) => {
-            if let Some(operand) =
-                expr_to_assembly(num_temps, stack_counter, irexp1, assembly, coloring)
-            {
-                assembly.push_str(&format!("mov eax, {operand}\n"));
-            }
+            let operand = expr_to_assembly(
+                num_temps,
+                stack_counter,
+                irexp1,
+                assembly,
+                coloring,
+                &mut current_temp,
+            );
             if let IRExp::Temp(i) = irexp {
-                let r = map_temp_to_register(coloring[i.name]);
-
-                assembly.push_str(&format!("mov {r}, eax\n"));
+                let r = map_temp_to_register(coloring[i.name], true, assembly);
+                assembly.push_str(&format!("mov {r}, {operand}\n"));
+                current_temp = r;
             }
         }
         IRCmd::JumpIf(irexp, label) => {
-            if let Some(operand) =
-                expr_to_assembly(num_temps, stack_counter, irexp, assembly, coloring)
-            {
-                assembly.push_str(&format!("cmp {operand}, 1\n"));
-            } else {
-                assembly.push_str(&"cmp eax, 1\n".to_string());
-            }
+            let operand = expr_to_assembly(
+                num_temps,
+                stack_counter,
+                irexp,
+                assembly,
+                coloring,
+                &mut current_temp,
+            );
+            assembly.push_str(&format!("cmp {operand}, 1\n"));
+
             assembly.push_str(&format!("je _LABEL_{label}\n"));
         }
         IRCmd::Jump(label) => assembly.push_str(&format!("jmp _LABEL_{label}\n",)),
         IRCmd::Label(label) => assembly.push_str(&format!("_LABEL_{label}:\n")),
         IRCmd::Return(irexp) => {
-            if let Some(operand) =
-                expr_to_assembly(num_temps, stack_counter, irexp, assembly, coloring)
-            {
-                assembly.push_str(&format!("mov ebx, {operand}\n"));
-            } else {
-                assembly.push_str("mov ebx, eax\n");
-            }
+            let operand = expr_to_assembly(
+                num_temps,
+                stack_counter,
+                irexp,
+                assembly,
+                coloring,
+                &mut current_temp,
+            );
+
+            assembly.push_str(&format!("mov ebx, {operand}\n"));
 
             assembly.push_str("mov rdi, QWORD PTR stdout[rip]\n");
             assembly.push_str("call fflush\n");
@@ -188,15 +219,17 @@ pub fn translate_instruction(
             crate::ir::Call::Print(irexp) => {
                 save_register_onto_stack(assembly);
                 let old_stack_counter = *stack_counter;
-                if let Some(operand) =
-                    expr_to_assembly(num_temps, stack_counter, irexp, assembly, coloring)
-                {
-                    assembly.push_str("sub rsp, 8\n");
-                    assembly.push_str(&format!("mov edi, {operand}\n"));
-                } else {
-                    assembly.push_str("sub rsp, 8\n");
-                    assembly.push_str(&"mov edi, eax\n".to_string());
-                }
+                let operand = expr_to_assembly(
+                    num_temps,
+                    stack_counter,
+                    irexp,
+                    assembly,
+                    coloring,
+                    &mut current_temp,
+                );
+                assembly.push_str("sub rsp, 8\n");
+                assembly.push_str(&format!("mov edi, {operand}\n"));
+
                 *stack_counter = old_stack_counter;
                 assembly.push_str("call putchar\n");
                 assembly.push_str("add rsp, 8\n");
@@ -222,7 +255,14 @@ pub fn translate_instruction(
             crate::ir::Call::Func(name, args) => {
                 save_register_onto_stack(assembly);
                 let old_stack_counter = *stack_counter;
-                move_args(args, assembly, num_temps, stack_counter, coloring);
+                move_args(
+                    args,
+                    assembly,
+                    num_temps,
+                    stack_counter,
+                    coloring,
+                    &mut current_temp,
+                );
                 *stack_counter = old_stack_counter;
                 assembly.push_str(&format!("call {name}\n"));
                 get_register_from_stack(assembly);
@@ -237,51 +277,49 @@ fn expr_to_assembly(
     expr: IRExp,
     assembly: &mut String,
     coloring: &Vec<usize>,
-) -> Option<String> {
+    current_temp: &mut str,
+) -> String {
     match expr {
-        IRExp::Temp(t) => Some(map_temp_to_register(coloring[t.name])),
-        IRExp::ConstInt(val) => {
-            assembly.push_str(&format!("mov eax, {val}\n"));
-            None
-        }
+        IRExp::Temp(t) => map_temp_to_register(coloring[t.name], false, assembly),
+        IRExp::ConstInt(val) => format!("{val}"),
         IRExp::ConstBool(val) => {
             if val {
                 assembly.push_str(&format!("mov eax, 1\n"));
             } else {
                 assembly.push_str(&format!("mov eax, 0\n"));
             }
-            None
+            format!("eax")
         }
         IRExp::Neg(irexp) => {
-            if let Some(r) = expr_to_assembly(num_temps, stack_counter, *irexp, assembly, coloring)
-            {
-                assembly.push_str(&format!("mov eax, {r}\n"));
-            }
-            assembly.push_str(&format!("neg eax\n"));
-            None
+            assembly.push_str(&format!("neg {current_temp}\n"));
+            format!("{current_temp}")
         }
         IRExp::NotBool(irexp) => {
-            if let Some(r) = expr_to_assembly(num_temps, stack_counter, *irexp, assembly, coloring)
-            {
-                assembly.push_str(&format!("mov eax, {r}\n"));
-            }
-            assembly.push_str(&format!("xor eax, 1\n"));
-            None
+            assembly.push_str(&format!("xor {current_temp}, 1\n"));
+            format!("{current_temp}")
         }
         IRExp::NotInt(irexp) => {
-            if let Some(r) = expr_to_assembly(num_temps, stack_counter, *irexp, assembly, coloring)
-            {
-                assembly.push_str(&format!("mov eax, {r}\n"));
-            }
-            assembly.push_str(&format!("not eax\n"));
-            None
+            assembly.push_str(&format!("not {current_temp}\n"));
+            format!("{current_temp}")
         }
         IRExp::Exp(b) => {
             let (e1, op, e2) = *b;
-            let first_op =
-                expr_to_assembly(num_temps, stack_counter, e1, assembly, coloring).unwrap();
-            let second_op =
-                expr_to_assembly(num_temps, stack_counter, e2, assembly, coloring).unwrap();
+            let first_op = expr_to_assembly(
+                num_temps,
+                stack_counter,
+                e1,
+                assembly,
+                coloring,
+                current_temp,
+            );
+            let second_op = expr_to_assembly(
+                num_temps,
+                stack_counter,
+                e2,
+                assembly,
+                coloring,
+                current_temp,
+            );
             match op {
                 crate::ir::Op::Plus => {
                     assembly.push_str(&format!("mov eax, {first_op}\n"));
@@ -304,7 +342,7 @@ fn expr_to_assembly(
                     assembly.push_str(&format!("mov eax, {first_op}\n"));
                     assembly.push_str("cdq\n");
                     assembly.push_str(&format!("idiv {second_op}\n"));
-                    return Some("edx".to_owned());
+                    return "edx".to_owned();
                 }
                 crate::ir::Op::LessThan => {
                     assembly.push_str(&format!("mov eax, {first_op}\n"));
@@ -365,14 +403,20 @@ fn expr_to_assembly(
                     assembly.push_str("sar eax, cl\n");
                 }
             }
-            None
+            "eax".to_owned()
         }
         IRExp::Call(call) => match *call {
             crate::ir::Call::Print(irexp) => {
                 save_register_onto_stack(assembly);
                 let old_stack_counter = *stack_counter;
-                let operand =
-                    expr_to_assembly(num_temps, stack_counter, irexp, assembly, coloring).unwrap();
+                let operand = expr_to_assembly(
+                    num_temps,
+                    stack_counter,
+                    irexp,
+                    assembly,
+                    coloring,
+                    current_temp,
+                );
                 *stack_counter = old_stack_counter;
                 assembly.push_str("sub rsp, 8\n");
                 assembly.push_str(&format!("mov edi, {operand}\n"));
@@ -381,7 +425,7 @@ fn expr_to_assembly(
                 assembly.push_str("call fflush\n");
                 assembly.push_str("add rsp, 8\n");
                 get_register_from_stack(assembly);
-                None
+                "eax".to_owned()
             }
             crate::ir::Call::Read => {
                 assembly.push_str(&format!("mov eax, {}\n", *stack_counter * 4));
@@ -390,7 +434,7 @@ fn expr_to_assembly(
                 assembly.push_str("call getchar\n");
                 assembly.push_str("add rsp, 8\n");
                 get_register_from_stack(assembly);
-                None
+                "eax".to_owned()
             }
             crate::ir::Call::Flush => {
                 assembly.push_str(&format!("mov eax, {}\n", *stack_counter * 4));
@@ -400,16 +444,23 @@ fn expr_to_assembly(
                 assembly.push_str("call fflush\n");
                 assembly.push_str("add rsp, 8\n");
                 get_register_from_stack(assembly);
-                None
+                "eax".to_owned()
             }
             crate::ir::Call::Func(name, args) => {
                 save_register_onto_stack(assembly);
                 let old_stack_counter = *stack_counter;
-                move_args(args, assembly, num_temps, stack_counter, coloring);
+                move_args(
+                    args,
+                    assembly,
+                    num_temps,
+                    stack_counter,
+                    coloring,
+                    current_temp,
+                );
                 *stack_counter = old_stack_counter;
                 assembly.push_str(&format!("call {name}\n"));
                 get_register_from_stack(assembly);
-                None
+                "eax".to_owned()
             }
         },
     }
