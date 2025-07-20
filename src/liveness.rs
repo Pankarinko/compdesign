@@ -11,13 +11,11 @@ enum Rules {
 /* Creates a vector of currently live temps for every line. Repeats until saturated. */
 pub fn analyze_func(cmds: &mut Vec<IRCmd>) -> Vec<Vec<usize>> {
     let rules = break_func_into_rules(cmds);
-    let mut live_temps = Vec::new();
     let mut needed_temps = Vec::new();
     for _ in 0..rules.len() {
         needed_temps.push(vec![]);
     }
     loop {
-        println!("{:?}", needed_temps);
         if collect_needed_temps(&rules, &mut needed_temps) {
             break;
         }
@@ -30,15 +28,7 @@ pub fn analyze_func(cmds: &mut Vec<IRCmd>) -> Vec<Vec<usize>> {
             }
         }
     }
-    for _ in 0..rules.len() {
-        live_temps.push(vec![]);
-    }
-    loop {
-        if collect_live_temps(&rules, &mut live_temps) {
-            break;
-        }
-    }
-    live_temps
+    needed_temps
 }
 
 fn collect_live_temps(rules: &[Vec<Rules>], live_temps: &mut [Vec<usize>]) -> bool {
@@ -248,7 +238,6 @@ fn get_exp_with_effect(exp: &IRExp, rules: &mut Vec<Rules>) {
             _ => (),
         },
     }
-    println!("{:?}", exp);
 }
 
 /* Collects all the temps in an expression */

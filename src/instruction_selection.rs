@@ -179,8 +179,6 @@ pub fn translate_instruction(
             );
             if let IRExp::Temp(i) = irexp {
                 let r = map_temp_to_register(coloring[i.name], true, assembly);
-                println!("{:?}", r);
-                println!("{:?}", operand);
                 assembly.push_str(&format!("mov {r}, {operand}\n"));
                 current_temp = r;
             }

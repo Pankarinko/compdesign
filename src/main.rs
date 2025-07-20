@@ -89,9 +89,6 @@ fn main() {
     let mut program_in_ir = translate_to_ir(funcs);
     //println!("{:#?}", program_in_ir[0].instructions);
 
-    let coloring = color_func(&mut program_in_ir[0]);
-    // println!("{:?}", live);
-
     //println!("{:#?}", program_in_ir);
     let string = args.next().unwrap().to_os_string();
     create_binary(&mut program_in_ir, string);
