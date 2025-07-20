@@ -1,4 +1,4 @@
-use crate::{ir::IRFunction, liveness::analyze_func_liveness};
+use crate::{ir::IRFunction, liveness::analyze_func};
 
 #[derive(Debug)]
 struct Node {
@@ -6,10 +6,13 @@ struct Node {
     neighbors: Vec<usize>,
 }
 
-pub fn color_func(f: &IRFunction) -> Vec<usize> {
-    let live_temps = analyze_func_liveness(&f.instructions);
+pub fn color_func(f: &mut IRFunction) -> Vec<usize> {
+    let live_temps = analyze_func(&mut f.instructions);
+    println!("{:?}", live_temps);
     let mut edges = build_interference(&live_temps, f.num_temps);
+    println!("{:?}", edges);
     let nodes = order_nodes(&mut edges);
+    println!("{:?}", color_greedy(&nodes));
     color_greedy(&nodes)
 }
 

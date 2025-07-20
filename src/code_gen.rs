@@ -6,7 +6,7 @@ use std::{
 
 use crate::{instruction_selection::translate_functions, ir::IRFunction};
 
-pub fn create_binary(program_in_ir: Vec<IRFunction<'_>>, string: OsString) {
+pub fn create_binary(program_in_ir: &mut Vec<IRFunction<'_>>, string: OsString) {
     let mut assembly = ".intel_syntax noprefix
         .global main
         .global _main

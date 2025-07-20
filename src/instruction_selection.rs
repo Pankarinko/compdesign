@@ -9,9 +9,9 @@ pub fn init_stack_counter(num_temps: usize) -> usize {
     (num_temps + 1).saturating_sub(7)
 }
 
-pub fn translate_functions(funcs: Vec<IRFunction<'_>>, assembly: &mut String) {
-    let main = funcs.iter().find(|f| f.name == b"main").unwrap();
-    let coloring = color_func(main);
+pub fn translate_functions(funcs: &mut Vec<IRFunction<'_>>, assembly: &mut String) {
+    let mut main = funcs.iter_mut().find(|f| f.name == b"main").unwrap();
+    let coloring = color_func(&mut main);
     let temp_count = main.num_temps;
     let mut stack_counter = init_stack_counter(main.num_temps);
     for cmd in (main.instructions).iter().cloned() {
@@ -24,7 +24,7 @@ pub fn translate_functions(funcs: Vec<IRFunction<'_>>, assembly: &mut String) {
             "eax".to_owned(),
         );
     }
-    for f in funcs.iter().filter(|f| f.name != b"main") {
+    for f in funcs.iter_mut().filter(|f| f.name != b"main") {
         assembly.push_str(&format!(
             "\n_{}:\n",
             str::from_utf8(f.name).unwrap().to_owned()
@@ -179,6 +179,8 @@ pub fn translate_instruction(
             );
             if let IRExp::Temp(i) = irexp {
                 let r = map_temp_to_register(coloring[i.name], true, assembly);
+                println!("{:?}", r);
+                println!("{:?}", operand);
                 assembly.push_str(&format!("mov {r}, {operand}\n"));
                 current_temp = r;
             }

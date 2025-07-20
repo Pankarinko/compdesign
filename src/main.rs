@@ -9,8 +9,8 @@ use lalrpop_util::lalrpop_mod;
 use tokenizer::{Token, tokenize};
 
 use crate::{
-    code_gen::create_binary, coloring::color_func, ir::translate_to_ir,
-    liveness::analyze_func_liveness, semantics::check_semantics,
+    code_gen::create_binary, coloring::color_func, ir::translate_to_ir, liveness::analyze_func,
+    semantics::check_semantics,
 };
 
 /*use crate::{
@@ -89,10 +89,10 @@ fn main() {
     let mut program_in_ir = translate_to_ir(funcs);
     //println!("{:#?}", program_in_ir[0].instructions);
 
-    let coloring = color_func(&program_in_ir[0]);
+    let coloring = color_func(&mut program_in_ir[0]);
     // println!("{:?}", live);
 
     //println!("{:#?}", program_in_ir);
     let string = args.next().unwrap().to_os_string();
-    create_binary(program_in_ir, string);
+    create_binary(&mut program_in_ir, string);
 }
