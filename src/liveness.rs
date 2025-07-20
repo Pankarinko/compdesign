@@ -28,6 +28,14 @@ pub fn analyze_func(cmds: &mut Vec<IRCmd>) -> Vec<Vec<usize>> {
             }
         }
     }
+    cmds.retain(|r| {
+        if let IRCmd::Label(l) = r {
+            if *l == len {
+                return false;
+            }
+        };
+        true
+    });
     needed_temps
 }
 
@@ -127,13 +135,14 @@ fn break_func_into_rules(cmds: &[IRCmd]) -> Vec<Vec<Rules>> {
     for (i, c) in cmds.iter().enumerate() {
         let mut rules_line = Vec::new();
         match c {
-            IRCmd::Load(t, exp) => {
-                rules_line.push(Rules::Def(get_temps(t)[0]));
+            IRCmd::Load(IRExp::Temp(temp), exp) => {
+                rules_line.push(Rules::Def(temp.name));
                 let temps = get_temps(exp);
-                get_exp_with_effect(exp, &mut rules_line);
+                get_exp_with_effect(temp, exp, &mut rules_line);
                 temps.iter().for_each(|t| rules_line.push(Rules::Use(*t)));
                 rules_line.push(Rules::Succ(i + 1));
             }
+            IRCmd::Load(_, _) => (),
             IRCmd::JumpIf(exp, l) => {
                 let temps = get_temps(exp);
                 temps.iter().for_each(|t| {
@@ -201,19 +210,20 @@ fn break_func_into_rules(cmds: &[IRCmd]) -> Vec<Vec<Rules>> {
     rules
 }
 
-fn get_exp_with_effect(exp: &IRExp, rules: &mut Vec<Rules>) {
+fn get_exp_with_effect(temp: &Temp, exp: &IRExp, rules: &mut Vec<Rules>) {
     match exp {
         IRExp::Temp(_) => (),
         IRExp::ConstInt(_) => (),
         IRExp::ConstBool(_) => (),
         IRExp::Neg(irexp) | IRExp::NotBool(irexp) | IRExp::NotInt(irexp) => {
-            get_exp_with_effect(irexp, rules)
+            get_exp_with_effect(temp, irexp, rules)
         }
 
         IRExp::Exp(b) => {
             let ar = &**b;
             match ar.1 {
                 crate::ir::Op::Div | crate::ir::Op::Mod => {
+                    rules.push(Rules::Nec(temp.name));
                     if let IRExp::Temp(t) = &ar.0 {
                         rules.push(Rules::Nec(t.name));
                     }
@@ -224,19 +234,22 @@ fn get_exp_with_effect(exp: &IRExp, rules: &mut Vec<Rules>) {
                 _ => (),
             }
         }
-        IRExp::Call(call) => match &**call {
-            crate::ir::Call::Print(IRExp::Temp(t)) => {
-                rules.push(Rules::Nec(t.name));
+        IRExp::Call(call) => {
+            rules.push(Rules::Nec(temp.name));
+            match &**call {
+                crate::ir::Call::Print(IRExp::Temp(t)) => {
+                    rules.push(Rules::Nec(t.name));
+                }
+                crate::ir::Call::Func(_, irexps) => {
+                    irexps.iter().for_each(|e| {
+                        if let IRExp::Temp(t) = e {
+                            rules.push(Rules::Nec(t.name));
+                        }
+                    });
+                }
+                _ => (),
             }
-            crate::ir::Call::Func(_, irexps) => {
-                irexps.iter().for_each(|e| {
-                    if let IRExp::Temp(t) = e {
-                        rules.push(Rules::Nec(t.name));
-                    }
-                });
-            }
-            _ => (),
-        },
+        }
     }
 }
 

@@ -183,7 +183,6 @@ pub fn translate_instruction(
                 let r = map_temp_to_register(coloring[i.name], true, assembly);
                 assembly.push_str(&format!("mov {r}, {operand}\n"));
                 *current_temp = r;
-                println!("{:?}", *current_temp);
             }
         }
         IRCmd::JumpIf(irexp, label) => {
