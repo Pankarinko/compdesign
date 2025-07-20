@@ -14,6 +14,7 @@ pub fn translate_functions(funcs: &mut Vec<IRFunction<'_>>, assembly: &mut Strin
     let coloring = color_func(&mut main);
     let temp_count = main.num_temps;
     let mut stack_counter = init_stack_counter(main.num_temps);
+    let mut current_temp = "eax".to_owned();
     for cmd in (main.instructions).iter().cloned() {
         translate_instruction(
             temp_count,
@@ -21,7 +22,7 @@ pub fn translate_functions(funcs: &mut Vec<IRFunction<'_>>, assembly: &mut Strin
             cmd,
             assembly,
             &coloring,
-            "eax".to_owned(),
+            &mut current_temp,
         );
     }
     for f in funcs.iter_mut().filter(|f| f.name != b"main") {
@@ -33,14 +34,15 @@ pub fn translate_functions(funcs: &mut Vec<IRFunction<'_>>, assembly: &mut Strin
         let temp_count = f.num_temps;
         let mut stack_counter = init_stack_counter(f.num_temps);
         move_params(f.num_params, assembly);
-        for cmd in (f.instructions).iter().cloned() {
+        let mut current_temp = "eax".to_owned();
+        for cmd in (f.instructions).iter() {
             translate_instruction(
                 temp_count,
                 &mut stack_counter,
-                cmd,
+                cmd.clone(),
                 assembly,
                 &coloring,
-                "eax".to_owned(),
+                &mut current_temp,
             );
         }
     }
@@ -165,7 +167,7 @@ pub fn translate_instruction(
     cmd: IRCmd,
     assembly: &mut String,
     coloring: &Vec<usize>,
-    mut current_temp: String,
+    current_temp: &mut String,
 ) {
     match cmd {
         IRCmd::Load(irexp, irexp1) => {
@@ -175,12 +177,13 @@ pub fn translate_instruction(
                 irexp1,
                 assembly,
                 coloring,
-                &mut current_temp,
+                current_temp,
             );
             if let IRExp::Temp(i) = irexp {
                 let r = map_temp_to_register(coloring[i.name], true, assembly);
                 assembly.push_str(&format!("mov {r}, {operand}\n"));
-                current_temp = r;
+                *current_temp = r;
+                println!("{:?}", *current_temp);
             }
         }
         IRCmd::JumpIf(irexp, label) => {
@@ -190,7 +193,7 @@ pub fn translate_instruction(
                 irexp,
                 assembly,
                 coloring,
-                &mut current_temp,
+                current_temp,
             );
             assembly.push_str(&format!("cmp {operand}, 1\n"));
 
@@ -205,7 +208,7 @@ pub fn translate_instruction(
                 irexp,
                 assembly,
                 coloring,
-                &mut current_temp,
+                current_temp,
             );
 
             assembly.push_str(&format!("mov ebx, {operand}\n"));
@@ -225,7 +228,7 @@ pub fn translate_instruction(
                     irexp,
                     assembly,
                     coloring,
-                    &mut current_temp,
+                    current_temp,
                 );
                 assembly.push_str("sub rsp, 8\n");
                 assembly.push_str(&format!("mov edi, {operand}\n"));
@@ -261,7 +264,7 @@ pub fn translate_instruction(
                     num_temps,
                     stack_counter,
                     coloring,
-                    &mut current_temp,
+                    current_temp,
                 );
                 *stack_counter = old_stack_counter;
                 assembly.push_str(&format!("call {name}\n"));
@@ -291,7 +294,7 @@ fn expr_to_assembly(
             format!("eax")
         }
         IRExp::Neg(irexp) => {
-            assembly.push_str(&format!("neg {current_temp}\n"));
+            assembly.push_str(&format!("neg {}\n", current_temp));
             format!("{current_temp}")
         }
         IRExp::NotBool(irexp) => {
