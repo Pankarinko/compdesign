@@ -136,27 +136,27 @@ fn get_register_from_stack(assembly: &mut String) {
 }
 
 fn map_temp_to_register(color: usize, load: bool, assembly: &mut String) -> String {
-    if color <= 11 {
+    if color < 11 {
         match color {
-            0 => return "ebx".to_owned(),
-            1 => return "edi".to_owned(),
-            2 => return "esi".to_owned(),
-            3 => return "r8d".to_owned(),
-            4 => return "r9d".to_owned(),
-            5 => return "r10d".to_owned(),
-            6 => return "r11d".to_owned(),
-            7 => return "r12d".to_owned(),
-            8 => return "r13d".to_owned(),
-            9 => return "r14d".to_owned(),
-            _ => return "r15d".to_owned(),
+            0 => "ebx".to_owned(),
+            1 => "edi".to_owned(),
+            2 => "esi".to_owned(),
+            3 => "r8d".to_owned(),
+            4 => "r9d".to_owned(),
+            5 => "r10d".to_owned(),
+            6 => "r11d".to_owned(),
+            7 => "r12d".to_owned(),
+            8 => "r13d".to_owned(),
+            9 => "r14d".to_owned(),
+            _ => "r15d".to_owned(),
         }
     } else {
-        let stack_i = (color - 10 + 7) * 4;
+        let stack_i = (color - 10) * 4;
         if load {
-            return format!("DWORD PTR [rsp-{}]", stack_i).to_string();
+            format!("DWORD PTR [rsp-{}]", stack_i).to_string()
         } else {
-            assembly.push_str(&format!("mov eax, DWORD PTR [rsp-{}]\n", stack_i));
-            return "eax".to_owned();
+            assembly.push_str(&format!("mov eax, DWORD PTR [rsp-{stack_i}]\n"));
+            "eax".to_owned()
         }
     }
 }
