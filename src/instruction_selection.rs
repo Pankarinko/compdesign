@@ -308,19 +308,12 @@ fn expr_to_assembly(
             "eax".to_owned()
         }
         IRExp::Exp(b) => {
-            let (e1, op, e2) = *b;
+            let (e1, op, _) = *b;
+            let second_op = current_temp.to_owned();
             let first_op = expr_to_assembly(
                 num_temps,
                 stack_counter,
                 e1,
-                assembly,
-                coloring,
-                current_temp,
-            );
-            let second_op = expr_to_assembly(
-                num_temps,
-                stack_counter,
-                e2,
                 assembly,
                 coloring,
                 current_temp,
