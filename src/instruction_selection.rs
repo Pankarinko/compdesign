@@ -286,23 +286,26 @@ fn expr_to_assembly(
         IRExp::ConstInt(val) => format!("{val}"),
         IRExp::ConstBool(val) => {
             if val {
-                assembly.push_str(&format!("mov eax, 1\n"));
+                assembly.push_str("mov eax, 1\n");
             } else {
-                assembly.push_str(&format!("mov eax, 0\n"));
+                assembly.push_str("mov eax, 0\n");
             }
-            format!("eax")
+            "eax".to_owned()
         }
         IRExp::Neg(irexp) => {
-            assembly.push_str(&format!("neg {}\n", current_temp));
-            format!("{current_temp}")
+            assembly.push_str(&format!("mov eax, {}\n", current_temp));
+            assembly.push_str(&format!("neg eax\n"));
+            "eax".to_owned()
         }
         IRExp::NotBool(irexp) => {
-            assembly.push_str(&format!("xor {current_temp}, 1\n"));
-            format!("{current_temp}")
+            assembly.push_str(&format!("mov eax, {}\n", current_temp));
+            assembly.push_str(&format!("xor eax, 1\n"));
+            "eax".to_owned()
         }
         IRExp::NotInt(irexp) => {
-            assembly.push_str(&format!("not {current_temp}\n"));
-            format!("{current_temp}")
+            assembly.push_str(&format!("mov eax, {}\n", current_temp));
+            assembly.push_str(&format!("not eax\n"));
+            "eax".to_owned()
         }
         IRExp::Exp(b) => {
             let (e1, op, e2) = *b;
