@@ -87,7 +87,7 @@ fn main() {
     //println!("{:#?}", funcs);
 
     let mut program_in_ir = translate_to_ir(funcs);
-    //println!("{:#?}", program_in_ir[0].instructions);
+    //println!("{:#?}", program_in_ir);
 
     //println!("{:#?}", program_in_ir);
     let string = args.next().unwrap().to_os_string();

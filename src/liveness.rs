@@ -188,7 +188,10 @@ fn break_func_into_rules(cmds: &[IRCmd]) -> Vec<Vec<Rules>> {
             IRCmd::Call(call) => match call {
                 crate::ir::Call::Print(irexp) => {
                     let temps = get_temps(irexp);
-                    temps.iter().for_each(|t| rules_line.push(Rules::Use(*t)));
+                    temps.iter().for_each(|t| {
+                        rules_line.push(Rules::Use(*t));
+                        rules_line.push(Rules::Nec(*t));
+                    });
                     rules_line.push(Rules::Succ(i + 1));
                 }
                 crate::ir::Call::Read | crate::ir::Call::Flush => {
